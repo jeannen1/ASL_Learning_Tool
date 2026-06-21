@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASL Learning Tool</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤟 ASL Learning Tool</h1>
+            <p>Learn American Sign Language</p>
+        </header>
+        <div class="main-content">
+            <div class="alphabet-sidebar">
+                <div class="alphabet-grid" id="alphabetGrid"></div>
+            </div>
+            <div class="display-area">
+                <div class="search-section">
+                    <div class="search-box">
+                        <input type="text" id="wordInput" placeholder="Enter a word, date, or phone number">
+                        <button class="search-btn" onclick="searchWord()">Show Sign</button>
+                    </div>
+                    <div class="error-message" id="errorMessage"></div>
+                </div>
+                <div class="sign-display">
+                    <div class="current-word" id="currentWord">Click a letter or search a word</div>
+                    <canvas id="signCanvas" width="600" height="500"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

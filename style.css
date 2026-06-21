@@ -1,0 +1,20 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+.container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+h1 { font-size: 2.5em; }
+.main-content { display: flex; min-height: 600px; }
+.alphabet-sidebar { width: 200px; background: #f8f9fa; border-right: 2px solid #e0e0e0; padding: 20px; overflow-y: auto; }
+.alphabet-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.letter-btn { padding: 15px; background: white; border: 2px solid #667eea; border-radius: 10px; font-size: 1.2em; font-weight: bold; color: #667eea; cursor: pointer; }
+.letter-btn:hover { background: #667eea; color: white; }
+.letter-btn.active { background: #667eea; color: white; }
+.display-area { flex: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; }
+.search-section { width: 100%; max-width: 600px; margin-bottom: 40px; }
+.search-box { display: flex; gap: 10px; }
+#wordInput { flex: 1; padding: 15px; font-size: 1.1em; border: 2px solid #667eea; border-radius: 10px; }
+.search-btn { padding: 15px 30px; background: #667eea; color: white; border: none; border-radius: 10px; font-size: 1.1em; cursor: pointer; }
+.error-message { color: #e74c3c; text-align: center; min-height: 20px; }
+.sign-display { width: 100%; max-width: 800px; background: #f8f9fa; border-radius: 20px; padding: 40px; text-align: center; }
+.current-word { font-size: 2em; color: #667eea; margin-bottom: 30px; }
+canvas { border: 3px solid #667eea; border-radius: 15px; background: white; }
