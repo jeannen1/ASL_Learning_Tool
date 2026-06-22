@@ -97,30 +97,43 @@ function preloadImages() {
     }
 }
 
-// Call preload on page load
-preloadImages();
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Page loaded! Creating buttons...");
+    
+    // Create alphabet buttons HERE
+    for(let i = 65; i <= 90; i++){
+        const letter = String.fromCharCode(i);
+        const btn = document.createElement('button');
+        btn.className = 'letter-btn';
+        btn.textContent = letter;
+        btn.onclick = () => showLetterSign(letter);
+        alphabetGrid.appendChild(btn);
+    }
 
-// Create alphabet buttons
-for(let i = 65; i <= 90; i++){
-    const letter = String.fromCharCode(i);
-    const btn = document.createElement('button');
-    btn.className = 'letter-btn';
-    btn.textContent = letter;
-    btn.onclick = () => showLetterSign(letter);
-    alphabetGrid.appendChild(btn);
-}
+    // Create number buttons HERE
+    for(let i = 0; i <= 9; i++){
+        const btn = document.createElement('button');
+        btn.className = 'letter-btn';
+        btn.textContent = i;
+        btn.onclick = () => showNumberSign(i);
+        alphabetGrid.appendChild(btn);
+    }
+    
+    console.log("Buttons created!");
+    
+    // Call preload HERE (not outside)
+    preloadImages();
+});
 
-// Create number buttons
-for(let i = 0; i <= 9; i++){
-    const btn = document.createElement('button');
-    btn.className = 'letter-btn';
-    btn.textContent = i;
-    btn.onclick = () => showNumberSign(i);
-    alphabetGrid.appendChild(btn);
-}
-
-wordInput.addEventListener('keypress', function(e){
-    if(e.key === 'Enter') searchWord();
+// Event listeners also inside DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    if (wordInput) {
+        wordInput.addEventListener('keypress', function(e){
+            if(e.key === 'Enter') searchWord();
+        });
+    }
+    
+    // ... rest of event listeners ...
 });
 
 // Animation slider control
