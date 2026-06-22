@@ -111,7 +111,7 @@ function drawWordSign(word){
     letters.forEach((char, index) => {
         ctx.save();
         ctx.translate(startX + index * spacing, y);
-        ctx.scale(0.3, 0.3);
+        ctx.scale(0.28, 0.28);
         if(/[a-zA-Z]/.test(char)){
             drawASLLetter(char.toUpperCase());
         } else if(/[0-9]/.test(char)){
@@ -124,453 +124,677 @@ function drawWordSign(word){
     });
 }
 
-function drawSkinGradient(x, y, width, height) {
-    const gradient = ctx.createRadialGradient(x, y, 0, x, y, Math.max(width, height));
-    gradient.addColorStop(0, '#f4d4b8');
-    gradient.addColorStop(0.4, '#e8c4a0');
-    gradient.addColorStop(0.7, '#d4a574');
-    gradient.addColorStop(1, '#c9956c');
-    return gradient;
-}
-
-function drawFinger(x, y, len, width, angle, bent = false) {
+// HIGHLY DETAILED HAND DRAWING FUNCTIONS
+function drawDetailedFinger(x, y, len, width, angle, curled = false) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-    if(bent) {
-        ctx.fillStyle = drawSkinGradient(0, len/2, width, len);
+    
+    if(curled) {
+        // Curled finger - cartoon style with outline
+        ctx.fillStyle = '#e8b896';
+        ctx.strokeStyle = '#8b6f47';
+        ctx.lineWidth = 4;
+        
         ctx.beginPath();
-        ctx.ellipse(0, len * 0.4, width * 0.6, len * 0.35, 0, 0, Math.PI * 2);
+        ctx.arc(0, len * 0.35, width * 0.65, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#a67c52';
-        ctx.lineWidth = 2;
         ctx.stroke();
-        ctx.fillStyle = '#ffe0e6';
+        
+        // Inner shadow for depth
+        ctx.fillStyle = 'rgba(139, 111, 71, 0.2)';
         ctx.beginPath();
-        ctx.ellipse(width * 0.2, len * 0.3, width * 0.25, width * 0.18, 0.3, 0, Math.PI * 2);
+        ctx.arc(width * 0.15, len * 0.3, width * 0.4, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Fingernail
+        ctx.fillStyle = '#f5d5d5';
+        ctx.strokeStyle = '#c9a0a0';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(width * 0.25, len * 0.25, width * 0.28, width * 0.2, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
     } else {
-        const seg = len / 3;
-        for(let i = 0; i < 3; i++) {
-            const w = width * (1 - i * 0.12);
-            const yPos = i * seg;
-            ctx.fillStyle = drawSkinGradient(0, yPos + seg/2, w, seg);
+        // Extended finger with segments
+        const segments = 3;
+        const segLen = len / segments;
+        
+        for(let i = 0; i < segments; i++) {
+            const w = width * (1 - i * 0.1);
+            const yPos = i * segLen;
+            
+            // Fill color with gradient effect
+            const gradient = ctx.createLinearGradient(-w/2, yPos, w/2, yPos + segLen);
+            gradient.addColorStop(0, '#e8b896');
+            gradient.addColorStop(0.5, '#f0c8a8');
+            gradient.addColorStop(1, '#e8b896');
+            ctx.fillStyle = gradient;
+            
+            // Finger segment shape
             ctx.beginPath();
             ctx.moveTo(-w/2, yPos);
-            ctx.bezierCurveTo(-w/2, yPos + seg/4, -w/2, yPos + seg*3/4, -w*0.45/2, yPos + seg);
-            ctx.lineTo(w*0.45/2, yPos + seg);
-            ctx.bezierCurveTo(w/2, yPos + seg*3/4, w/2, yPos + seg/4, w/2, yPos);
+            ctx.bezierCurveTo(-w/2, yPos + segLen * 0.3, -w/2, yPos + segLen * 0.7, -w * 0.48/2, yPos + segLen);
+            ctx.lineTo(w * 0.48/2, yPos + segLen);
+            ctx.bezierCurveTo(w/2, yPos + segLen * 0.7, w/2, yPos + segLen * 0.3, w/2, yPos);
             ctx.closePath();
             ctx.fill();
-            ctx.strokeStyle = '#a67c52';
-            ctx.lineWidth = 2;
+            
+            // Bold outline
+            ctx.strokeStyle = '#8b6f47';
+            ctx.lineWidth = 4;
             ctx.stroke();
+            
+            // Knuckle crease
             if(i > 0) {
-                ctx.strokeStyle = '#8b6f47';
-                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#6b4f37';
+                ctx.lineWidth = 2.5;
                 ctx.beginPath();
-                ctx.moveTo(-w/3, yPos);
-                ctx.lineTo(w/3, yPos);
+                ctx.arc(0, yPos, w * 0.42, 0.2, Math.PI - 0.2);
                 ctx.stroke();
+                
+                // Knuckle shadow
+                ctx.fillStyle = 'rgba(107, 79, 55, 0.15)';
+                ctx.beginPath();
+                ctx.ellipse(0, yPos - 3, w * 0.35, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
             }
+            
+            // Side shading for 3D effect
+            ctx.fillStyle = 'rgba(139, 111, 71, 0.25)';
+            ctx.beginPath();
+            ctx.ellipse(-w * 0.35, yPos + segLen/2, w * 0.12, segLen * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
         }
-        ctx.fillStyle = '#ffe0e6';
-        ctx.strokeStyle = '#d4a090';
-        ctx.lineWidth = 1.5;
+        
+        // Fingernail at tip
+        ctx.fillStyle = '#f5d5d5';
+        ctx.strokeStyle = '#c9a0a0';
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.ellipse(0, len - width * 0.3, width * 0.35, width * 0.25, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, len - width * 0.32, width * 0.38, width * 0.28, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
+        
+        // Nail highlight
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.beginPath();
+        ctx.ellipse(-width * 0.12, len - width * 0.38, width * 0.18, width * 0.12, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Nail moon (lunula)
+        ctx.fillStyle = 'rgba(255, 240, 240, 0.8)';
+        ctx.beginPath();
+        ctx.ellipse(0, len - width * 0.15, width * 0.22, width * 0.12, 0, Math.PI, Math.PI * 2);
+        ctx.fill();
     }
+    
     ctx.restore();
 }
 
-function drawThumb(x, y, len, width, angle) {
+function drawDetailedThumb(x, y, len, width, angle) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-    const seg1 = len * 0.58;
-    const seg2 = len * 0.42;
-    ctx.fillStyle = drawSkinGradient(0, seg1/2, width, seg1);
+    
+    const seg1Len = len * 0.56;
+    const seg2Len = len * 0.44;
+    
+    // Lower thumb segment
+    const grad1 = ctx.createLinearGradient(-width/2, 0, width/2, seg1Len);
+    grad1.addColorStop(0, '#e8b896');
+    grad1.addColorStop(0.5, '#f0c8a8');
+    grad1.addColorStop(1, '#e8b896');
+    ctx.fillStyle = grad1;
+    
     ctx.beginPath();
     ctx.moveTo(-width/2, 0);
-    ctx.bezierCurveTo(-width/2, seg1/3, -width/2, seg1*2/3, -width*0.47/2, seg1);
-    ctx.lineTo(width*0.47/2, seg1);
-    ctx.bezierCurveTo(width/2, seg1*2/3, width/2, seg1/3, width/2, 0);
+    ctx.bezierCurveTo(-width/2, seg1Len * 0.3, -width/2, seg1Len * 0.7, -width * 0.48/2, seg1Len);
+    ctx.lineTo(width * 0.48/2, seg1Len);
+    ctx.bezierCurveTo(width/2, seg1Len * 0.7, width/2, seg1Len * 0.3, width/2, 0);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = '#a67c52';
-    ctx.lineWidth = 2;
+    
+    ctx.strokeStyle = '#8b6f47';
+    ctx.lineWidth = 4;
     ctx.stroke();
-    const w2 = width * 0.88;
-    ctx.fillStyle = drawSkinGradient(0, seg1 + seg2/2, w2, seg2);
+    
+    // Thumb knuckle
+    ctx.strokeStyle = '#6b4f37';
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.moveTo(-w2/2, seg1);
-    ctx.bezierCurveTo(-w2/2, seg1 + seg2/3, -w2/2, seg1 + seg2*2/3, -w2*0.85/2, len);
-    ctx.lineTo(w2*0.85/2, len);
-    ctx.bezierCurveTo(w2/2, seg1 + seg2*2/3, w2/2, seg1 + seg2/3, w2/2, seg1);
+    ctx.arc(0, seg1Len, width * 0.4, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+    
+    ctx.fillStyle = 'rgba(107, 79, 55, 0.15)';
+    ctx.beginPath();
+    ctx.ellipse(0, seg1Len - 3, width * 0.32, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Upper thumb segment
+    const w2 = width * 0.9;
+    const grad2 = ctx.createLinearGradient(-w2/2, seg1Len, w2/2, len);
+    grad2.addColorStop(0, '#e8b896');
+    grad2.addColorStop(0.5, '#f0c8a8');
+    grad2.addColorStop(1, '#e8b896');
+    ctx.fillStyle = grad2;
+    
+    ctx.beginPath();
+    ctx.moveTo(-w2/2, seg1Len);
+    ctx.bezierCurveTo(-w2/2, seg1Len + seg2Len * 0.3, -w2/2, seg1Len + seg2Len * 0.7, -w2 * 0.87/2, len);
+    ctx.lineTo(w2 * 0.87/2, len);
+    ctx.bezierCurveTo(w2/2, seg1Len + seg2Len * 0.7, w2/2, seg1Len + seg2Len * 0.3, w2/2, seg1Len);
     ctx.closePath();
     ctx.fill();
+    
+    ctx.strokeStyle = '#8b6f47';
+    ctx.lineWidth = 4;
     ctx.stroke();
-    ctx.fillStyle = '#ffe0e6';
-    ctx.strokeStyle = '#d4a090';
-    ctx.lineWidth = 1.5;
+    
+    // Side shading
+    ctx.fillStyle = 'rgba(139, 111, 71, 0.25)';
     ctx.beginPath();
-    ctx.ellipse(0, len - width * 0.28, width * 0.38, width * 0.28, 0, 0, Math.PI * 2);
+    ctx.ellipse(-w2 * 0.35, seg1Len + seg2Len/2, w2 * 0.12, seg2Len * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Thumbnail
+    ctx.fillStyle = '#f5d5d5';
+    ctx.strokeStyle = '#c9a0a0';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.ellipse(0, len - width * 0.3, width * 0.42, width * 0.32, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+    
+    // Nail highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.beginPath();
+    ctx.ellipse(-width * 0.14, len - width * 0.36, width * 0.2, width * 0.14, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    
     ctx.restore();
 }
 
-function drawPalm(x, y, w, h) {
+function drawDetailedPalm(x, y, w, h) {
     ctx.save();
     ctx.translate(x, y);
-    ctx.fillStyle = drawSkinGradient(0, 0, w, h);
+    
+    // Palm gradient
+    const palmGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(w, h)/2);
+    palmGrad.addColorStop(0, '#f0c8a8');
+    palmGrad.addColorStop(0.4, '#e8b896');
+    palmGrad.addColorStop(0.7, '#d4a076');
+    palmGrad.addColorStop(1, '#c9956c');
+    ctx.fillStyle = palmGrad;
+    
+    // Palm shape
     ctx.beginPath();
     ctx.ellipse(0, 0, w/2, h/2, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#a67c52';
-    ctx.lineWidth = 2.5;
+    
+    // Bold outline
+    ctx.strokeStyle = '#8b6f47';
+    ctx.lineWidth = 4;
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(139, 111, 71, 0.4)';
-    ctx.lineWidth = 2;
+    
+    // Palm crease lines (darker and more visible)
+    ctx.strokeStyle = '#7a5f3f';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    
+    // Heart line
     ctx.beginPath();
     ctx.moveTo(-w/3, -h/5);
-    ctx.quadraticCurveTo(0, -h/7, w/4, -h/6);
+    ctx.quadraticCurveTo(-w/8, -h/7, w/5, -h/6);
     ctx.stroke();
+    
+    // Head line
     ctx.beginPath();
-    ctx.moveTo(-w/3, h/12);
+    ctx.moveTo(-w/3, h/10);
     ctx.quadraticCurveTo(0, h/6, w/3, h/5);
     ctx.stroke();
+    
+    // Life line
     ctx.beginPath();
-    ctx.arc(-w/5, h/5, w/3.5, -Math.PI * 0.55, Math.PI * 0.25);
+    ctx.arc(-w/5, h/5, w/3.5, -Math.PI * 0.6, Math.PI * 0.3);
     ctx.stroke();
+    
+    // Thumb muscle shadow
+    ctx.fillStyle = 'rgba(139, 111, 71, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(-w/4, h/6, w/5, h/4, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Palm shadow for depth
+    ctx.fillStyle = 'rgba(139, 111, 71, 0.15)';
+    ctx.beginPath();
+    ctx.ellipse(w/6, h/4, w/6, h/5, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    
     ctx.restore();
 }
 
-function drawTouch(x, y) {
+function drawContactPoint(x, y, size = 18) {
     ctx.save();
-    const grad = ctx.createRadialGradient(x, y, 0, x, y, 18);
-    grad.addColorStop(0, 'rgba(255, 60, 60, 0.9)');
-    grad.addColorStop(0.6, 'rgba(255, 100, 100, 0.5)');
-    grad.addColorStop(1, 'rgba(255, 150, 150, 0.1)');
-    ctx.fillStyle = grad;
+    
+    // Outer glow
+    const outerGrad = ctx.createRadialGradient(x, y, 0, x, y, size * 1.8);
+    outerGrad.addColorStop(0, 'rgba(255, 50, 50, 0.8)');
+    outerGrad.addColorStop(0.5, 'rgba(255, 80, 80, 0.4)');
+    outerGrad.addColorStop(1, 'rgba(255, 120, 120, 0)');
+    ctx.fillStyle = outerGrad;
     ctx.beginPath();
-    ctx.arc(x, y, 18, 0, Math.PI * 2);
+    ctx.arc(x, y, size * 1.8, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = 'white';
+    
+    // Main contact dot
+    const mainGrad = ctx.createRadialGradient(x - 3, y - 3, 0, x, y, size);
+    mainGrad.addColorStop(0, '#ff6060');
+    mainGrad.addColorStop(0.7, '#ff3030');
+    mainGrad.addColorStop(1, '#cc0000');
+    ctx.fillStyle = mainGrad;
     ctx.beginPath();
-    ctx.arc(x - 4, y - 4, 4, 0, Math.PI * 2);
+    ctx.arc(x, y, size, 0, Math.PI * 2);
     ctx.fill();
+    
+    // Bright highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.beginPath();
+    ctx.arc(x - 5, y - 5, size * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Bold outline
+    ctx.strokeStyle = '#990000';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.stroke();
+    
     ctx.restore();
 }
+
 function drawASLLetter(letter){
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
     ctx.save();
     ctx.translate(cx, cy);
+    
+    // Letter label
     ctx.fillStyle = '#667eea';
-    ctx.font = 'bold 48px Arial';
+    ctx.font = 'bold 52px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(letter, 0, -180);
+    ctx.fillText(letter, 0, -185);
     
     switch(letter){
         case 'A':
-            drawPalm(0, 30, 120, 140);
+            drawDetailedPalm(0, 30, 120, 140);
             for(let i = 0; i < 4; i++){
-                drawFinger(-35 + i * 23, -15, 30, 20, 0, true);
+                drawDetailedFinger(-35 + i * 23, -15, 32, 22, 0, true);
             }
-            drawThumb(-70, 10, 55, 24, -0.2);
+            drawDetailedThumb(-72, 10, 58, 26, -0.2);
             break;
+            
         case 'B':
-            drawPalm(0, 40, 110, 150);
-            drawFinger(-38, -80, 95, 20, 0);
-            drawFinger(-13, -85, 100, 20, 0);
-            drawFinger(12, -85, 98, 19, 0);
-            drawFinger(35, -80, 90, 18, 0);
-            drawThumb(-65, 25, 50, 22, 0);
+            drawDetailedPalm(0, 40, 110, 150);
+            drawDetailedFinger(-38, -85, 98, 22, 0);
+            drawDetailedFinger(-13, -90, 103, 22, 0);
+            drawDetailedFinger(12, -90, 101, 21, 0);
+            drawDetailedFinger(35, -85, 93, 20, 0);
+            drawDetailedThumb(-67, 25, 52, 24, 0);
             break;
+            
         case 'C':
-            drawPalm(0, 20, 100, 130);
-            drawFinger(-35, -60, 85, 18, 0.3);
-            drawFinger(-12, -70, 95, 19, 0.15);
-            drawFinger(12, -70, 95, 19, -0.15);
-            drawFinger(35, -60, 85, 18, -0.3);
-            drawThumb(-55, -30, 60, 24, 0.5);
+            drawDetailedPalm(0, 20, 100, 130);
+            drawDetailedFinger(-35, -65, 88, 20, 0.35);
+            drawDetailedFinger(-12, -75, 98, 21, 0.18);
+            drawDetailedFinger(12, -75, 98, 21, -0.18);
+            drawDetailedFinger(35, -65, 88, 20, -0.35);
+            drawDetailedThumb(-58, -35, 63, 26, 0.55);
             break;
+            
         case 'D':
-            drawPalm(0, 40, 110, 140);
-            drawFinger(0, -90, 105, 20, 0);
-            drawThumb(-50, -10, 55, 22, 0.8);
-            drawFinger(15, 10, 28, 20, 0, true);
-            drawFinger(35, 15, 26, 18, 0.2, true);
-            drawFinger(52, 20, 24, 16, 0.3, true);
-            drawTouch(-20, 5);
+            drawDetailedPalm(0, 40, 110, 140);
+            drawDetailedFinger(0, -95, 108, 22, 0);
+            drawDetailedThumb(-52, -12, 58, 24, 0.85);
+            drawDetailedFinger(15, 8, 30, 22, 0, true);
+            drawDetailedFinger(35, 13, 28, 20, 0.2, true);
+            drawDetailedFinger(53, 18, 26, 18, 0.3, true);
+            drawContactPoint(-22, 3, 16);
+            ctx.fillStyle = '#667eea';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('← Thumb touches middle finger', 70, 5);
             break;
+            
         case 'E':
-            drawPalm(0, 35, 120, 140);
+            drawDetailedPalm(0, 35, 120, 140);
             for(let i = 0; i < 4; i++){
-                drawFinger(-35 + i * 23, -20, 28, 20, 0, true);
+                drawDetailedFinger(-35 + i * 23, -22, 30, 22, 0, true);
             }
             ctx.save();
-            ctx.translate(-55, -5);
-            ctx.rotate(-0.3);
-            ctx.fillStyle = drawSkinGradient(0, 0, 22, 32);
+            ctx.translate(-58, -8);
+            ctx.rotate(-0.35);
+            const thumbGrad = ctx.createLinearGradient(-12, -16, 12, 16);
+            thumbGrad.addColorStop(0, '#e8b896');
+            thumbGrad.addColorStop(0.5, '#f0c8a8');
+            thumbGrad.addColorStop(1, '#e8b896');
+            ctx.fillStyle = thumbGrad;
             ctx.beginPath();
-            ctx.ellipse(0, 0, 22, 32, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, 24, 34, 0, 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = '#a67c52';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#8b6f47';
+            ctx.lineWidth = 4;
             ctx.stroke();
             ctx.restore();
             break;
+            
         case 'F':
-            drawPalm(0, 40, 110, 140);
-            drawFinger(-12, -85, 100, 20, 0);
-            drawFinger(12, -85, 98, 19, 0);
-            drawFinger(35, -80, 90, 18, 0);
-            drawThumb(-50, -30, 60, 24, 0.6);
+            drawDetailedPalm(0, 40, 110, 140);
+            drawDetailedFinger(-12, -90, 103, 22, 0);
+            drawDetailedFinger(12, -90, 101, 21, 0);
+            drawDetailedFinger(35, -85, 93, 20, 0);
+            drawDetailedThumb(-52, -35, 63, 26, 0.65);
             ctx.save();
-            ctx.fillStyle = drawSkinGradient(-38, -52, 18, 18);
-            ctx.beginPath();
-            ctx.arc(-38, -52, 18, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#a67c52';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.restore();
-            drawTouch(-38, -50);
-            break;
-        case 'G':
-            drawPalm(0, 30, 110, 140);
-            drawFinger(-30, -20, 80, 18, 1.57);
-            drawThumb(-55, -25, 60, 24, 0);
-            for(let i = 1; i < 4; i++){
-                drawFinger(-10 + i * 20, 15, 26, 18, 0, true);
-            }
-            break;
-        case 'H':
-            drawPalm(0, 40, 110, 140);
-            drawFinger(-15, -20, 80, 18, 1.57);
-            drawFinger(10, -20, 80, 18, 1.57);
-            drawThumb(-60, -10, 55, 22, 0);
-            drawFinger(40, 15, 24, 16, 0, true);
-            drawFinger(58, 20, 22, 15, 0.2, true);
-            break;
-        case 'I':
-            drawPalm(0, 35, 120, 140);
-            drawFinger(45, -80, 85, 17, 0);
-            for(let i = 0; i < 3; i++){
-                drawFinger(-30 + i * 22, -10, 28, 20, 0, true);
-            }
-            drawThumb(-65, 15, 50, 22, -0.3);
-            break;
-        case 'J':
-            drawPalm(0, 35, 120, 140);
-            drawFinger(45, -80, 85, 17, 0);
-            for(let i = 0; i < 3; i++){
-                drawFinger(-30 + i * 22, -10, 28, 20, 0, true);
-            }
-            drawThumb(-65, 15, 50, 22, -0.3);
-            ctx.strokeStyle = '#667eea';
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.arc(60, -40, 25, 0, Math.PI * 0.8);
-            ctx.stroke();
-            break;
-        case 'K':
-            drawPalm(0, 40, 110, 140);
-            drawFinger(-10, -90, 105, 20, 0);
-            drawFinger(15, -85, 100, 19, 0.2);
-            drawThumb(-45, -30, 60, 24, 0.5);
-            drawFinger(40, 15, 26, 18, 0, true);
-            drawFinger(58, 20, 24, 16, 0.2, true);
-            break;
-        case 'L':
-            drawPalm(0, 35, 120, 140);
-            drawFinger(-25, -90, 100, 20, 0);
-            drawThumb(-25, -90, 90, 22, 1.57);
-            for(let i = 1; i < 4; i++){
-                drawFinger(-5 + i * 22, 10, 28, 20, 0, true);
-            }
-            break;
-        case 'M':
-            drawPalm(0, 40, 120, 150);
-            for(let i = 0; i < 3; i++){
-                drawFinger(-30 + i * 25, -10, 30, 22, 0, true);
-            }
-            drawFinger(50, 5, 26, 20, 0.2, true);
-            drawThumb(-60, 15, 50, 22, -0.3);
-            break;
-        case 'N':
-            drawPalm(0, 40, 120, 150);
-            for(let i = 0; i < 2; i++){
-                drawFinger(-25 + i * 25, -10, 30, 22, 0, true);
-            }
-            drawFinger(30, 5, 26, 20, 0.2, true);
-            drawFinger(50, 10, 26, 19, 0.3, true);
-            drawThumb(-60, 15, 50, 22, -0.3);
-            break;
-        case 'O':
-            drawPalm(0, 20, 100, 130);
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(0, -25, 50, 0, Math.PI * 2);
-            ctx.lineWidth = 22;
-            ctx.strokeStyle = drawSkinGradient(0, -25, 50, 50);
-            ctx.stroke();
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = '#a67c52';
-            ctx.stroke();
-            ctx.restore();
-            drawTouch(-35, -25);
-            drawTouch(35, -25);
-            break;
-        case 'P':
-            drawPalm(0, 40, 110, 140);
-            drawFinger(-10, -20, 80, 18, 1.3);
-            drawThumb(-45, -30, 60, 24, 0.5);
-            for(let i = 1; i < 4; i++){
-                drawFinger(10 + i * 20, 15, 26, 18, 0, true);
-            }
-            break;
-        case 'Q':
-            drawPalm(0, 30, 110, 140);
-            drawFinger(-30, 10, 80, 18, 1.8);
-            drawThumb(-55, 5, 60, 24, 1.8);
-            for(let i = 1; i < 4; i++){
-                drawFinger(-10 + i * 20, 15, 26, 18, 0, true);
-            }
-            break;
-        case 'R':
-            drawPalm(0, 40, 110, 140);
-            drawFinger(-15, -90, 100, 20, 0);
-            drawFinger(10, -88, 98, 19, 0);
-            ctx.save();
+            ctx.fillStyle = '#e8b896';
             ctx.strokeStyle = '#8b6f47';
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.moveTo(-15, -30);
-            ctx.lineTo(10, -40);
-            ctx.stroke();
-            ctx.restore();
-            for(let i = 2; i < 4; i++){
-                drawFinger(15 + i * 20, 15, 26, 18, 0, true);
-            }
-            drawThumb(-60, 20, 50, 22, -0.2);
-            break;
-        case 'S':
-            drawPalm(0, 30, 120, 140);
-            for(let i = 0; i < 4; i++){
-                drawFinger(-35 + i * 23, -15, 28, 20, 0, true);
-            }
-            ctx.save();
-            ctx.translate(-40, -15);
-            ctx.rotate(-0.5);
-            ctx.fillStyle = drawSkinGradient(0, 0, 22, 28);
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 22, 28, 0, 0, Math.PI * 2);
+            ctx.arc(-40, -55, 20, 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = '#a67c52';
-            ctx.lineWidth = 2;
             ctx.stroke();
             ctx.restore();
+            drawContactPoint(-40, -53, 15);
+            ctx.fillStyle = '#667eea';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('← Index & thumb touch', 15, -53);
             break;
-        case 'T':
-            drawPalm(0, 40, 120, 150);
-            drawFinger(-25, -10, 28, 22, 0, true);
+            
+        case 'G':
+            drawDetailedPalm(0, 30, 110, 140);
+            drawDetailedFinger(-32, -25, 83, 20, 1.57);
+            drawDetailedThumb(-58, -28, 63, 26, 0);
             for(let i = 1; i < 4; i++){
-                drawFinger(0 + i * 22, 5, 28, 20, 0, true);
+                drawDetailedFinger(-10 + i * 20, 13, 28, 20, 0, true);
             }
-            ctx.save();
-            ctx.translate(-45, -10);
-            ctx.rotate(-0.5);
-            ctx.fillStyle = drawSkinGradient(0, 0, 18, 30);
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 18, 30, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#a67c52';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.restore();
             break;
-        case 'U':
-            drawPalm(0, 40, 110, 140);
-            drawFinger(-15, -90, 100, 20, 0);
-            drawFinger(10, -88, 98, 19, 0);
-            for(let i = 2; i < 4; i++){
-                drawFinger(15 + i * 20, 15, 26, 18, 0, true);
-            }
-            drawThumb(-60, 20, 50, 22, -0.2);
+            
+        case 'H':
+            drawDetailedPalm(0, 40, 110, 140);
+            drawDetailedFinger(-17, -25, 83, 20, 1.57);
+            drawDetailedFinger(10, -25, 83, 20, 1.57);
+            drawDetailedThumb(-62, -12, 58, 24, 0);
+            drawDetailedFinger(42, 13, 26, 18, 0, true);
+            drawDetailedFinger(60, 18, 24, 17, 0.2, true);
             break;
-        case 'V':
-            drawPalm(0, 40, 110, 140);
-            drawFinger(-18, -90, 100, 20, -0.3);
-            drawFinger(8, -90, 100, 20, 0.3);
-            for(let i = 2; i < 4; i++){
-                drawFinger(15 + i * 20, 15, 26, 18, 0, true);
-            }
-            drawThumb(-60, 20, 50, 22, -0.2);
-            break;
-        case 'W':
-            drawPalm(0, 40, 110, 140);
-            drawFinger(-25, -90, 95, 19, -0.3);
-            drawFinger(-5, -92, 100, 20, 0);
-            drawFinger(18, -90, 98, 19, 0.3);
-            drawFinger(40, 15, 26, 18, 0.2, true);
-            drawThumb(-60, 20, 50, 22, -0.2);
-            break;
-        case 'X':
-            drawPalm(0, 35, 120, 140);
-            ctx.save();
-            ctx.translate(0, -50);
-            ctx.fillStyle = drawSkinGradient(0, 20, 16, 48);
-            ctx.beginPath();
-            ctx.moveTo(-8, 0);
-            ctx.lineTo(-8, 40);
-            ctx.bezierCurveTo(-8, 45, -5, 48, 0, 48);
-            ctx.bezierCurveTo(5, 48, 8, 45, 8, 40);
-            ctx.lineTo(8, 0);
-            ctx.bezierCurveTo(8, -5, 5, -8, 0, -8);
-            ctx.bezierCurveTo(-5, -8, -8, -5, -8, 0);
-            ctx.fill();
-            ctx.strokeStyle = '#a67c52';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.restore();
+            
+        case 'I':
+            drawDetailedPalm(0, 35, 120, 140);
+            drawDetailedFinger(47, -85, 88, 19, 0);
             for(let i = 0; i < 3; i++){
-                drawFinger(-25 + i * 22, 0, 28, 20, 0, true);
+                drawDetailedFinger(-30 + i * 22, -12, 30, 22, 0, true);
             }
-            drawFinger(40, 10, 26, 18, 0.2, true);
-            drawThumb(-65, 15, 50, 22, -0.3);
+            drawDetailedThumb(-67, 13, 52, 24, -0.3);
             break;
-        case 'Y':
-            drawPalm(0, 35, 120, 140);
-            drawFinger(45, -80, 85, 17, 0);
+            
+        case 'J':
+            drawDetailedPalm(0, 35, 120, 140);
+            drawDetailedFinger(47, -85, 88, 19, 0);
             for(let i = 0; i < 3; i++){
-                drawFinger(-30 + i * 22, -10, 28, 20, 0, true);
+                drawDetailedFinger(-30 + i * 22, -12, 30, 22, 0, true);
             }
-            drawThumb(-70, -20, 70, 24, 1.57);
-            break;
-        case 'Z':
-            drawPalm(0, 35, 120, 140);
-            drawFinger(0, -90, 105, 20, 0);
-            for(let i = 1; i < 4; i++){
-                drawFinger(-5 + i * 22, 10, 28, 20, 0, true);
-            }
-            drawThumb(-65, 15, 50, 22, -0.3);
+            drawDetailedThumb(-67, 13, 52, 24, -0.3);
             ctx.strokeStyle = '#667eea';
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
             ctx.beginPath();
-            ctx.moveTo(-20, -90);
-            ctx.lineTo(20, -90);
-            ctx.lineTo(-20, -50);
-            ctx.lineTo(20, -50);
+            ctx.arc(62, -45, 28, 0, Math.PI * 0.85);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(90, -45);
+            ctx.lineTo(95, -42);
             ctx.stroke();
             break;
+            
+        case 'K':
+            drawDetailedPalm(0, 40, 110, 140);
+            drawDetailedFinger(-10, -95, 108, 22, 0);
+            drawDetailedFinger(15, -90, 103, 21, 0.22);
+            drawDetailedThumb(-47, -35, 63, 26, 0.55);
+            drawDetailedFinger(42, 13, 28, 20, 0, true);
+            drawDetailedFinger(60, 18, 26, 18, 0.2, true);
+            break;
+            
+        case 'L':
+            drawDetailedPalm(0, 35, 120, 140);
+            drawDetailedFinger(-27, -95, 103, 22, 0);
+            drawDetailedThumb(-27, -95, 93, 24, 1.57);
+            for(let i = 1; i < 4; i++){
+                drawDetailedFinger(-5 + i * 22, 8, 30, 22, 0, true);
+            }
+            break;
+            
+        case 'M':
+            drawDetailedPalm(0, 40, 120, 150);
+            for(let i = 0; i < 3; i++){
+                drawDetailedFinger(-30 + i * 25, -12, 32, 24, 0, true);
+            }
+            drawDetailedFinger(52, 3, 28, 22, 0.2, true);
+            drawDetailedThumb(-62, 13, 52, 24, -0.3);
+            break;
+            
+        case 'N':
+            drawDetailedPalm(0, 40, 120, 150);
+            for(let i = 0; i < 2; i++){
+                drawDetailedFinger(-25 + i * 25, -12, 32, 24, 0, true);
+            }
+            drawDetailedFinger(32, 3, 28, 22, 0.2, true);
+            drawDetailedFinger(52, 8, 28, 21, 0.3, true);
+            drawDetailedThumb(-62, 13, 52, 24, -0.3);
+            break;
+            
+        case 'O':
+            drawDetailedPalm(0, 20, 100, 130);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(0, -28, 53, 0, Math.PI * 2);
+            ctx.lineWidth = 24;
+            const oGrad = ctx.createLinearGradient(-53, -28, 53, -28);
+            oGrad.addColorStop(0, '#e8b896');
+            oGrad.addColorStop(0.3, '#f0c8a8');
+            oGrad.addColorStop(0.7, '#f0c8a8');
+            oGrad.addColorStop(1, '#e8b896');
+            ctx.strokeStyle = oGrad;
+            ctx.stroke();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#8b6f47';
+            ctx.stroke();
+            ctx.restore();
+            drawContactPoint(-38, -28, 14);
+            drawContactPoint(38, -28, 14);
+            ctx.fillStyle = '#667eea';
+            ctx.font = 'bold 15px Arial';
+            ctx.fillText('All fingertips touch thumb', 0, 35);
+            break;
+            
+        case 'P':
+            drawDetailedPalm(0, 40, 110, 140);
+            drawDetailedFinger(-12, -25, 83, 20, 1.35);
+            drawDetailedThumb(-47, -35, 63, 26, 0.55);
+            for(let i = 1; i < 4; i++){
+                drawDetailedFinger(10 + i * 20, 13, 28, 20, 0, true);
+            }
+            break;
+            
+        case 'Q':
+            drawDetailedPalm(0, 30, 110, 140);
+            drawDetailedFinger(-32, 8, 83, 20, 1.85);
+            drawDetailedThumb(-58, 3, 63, 26, 1.85);
+            for(let i = 1; i < 4; i++){
+                drawDetailedFinger(-10 + i * 20, 13, 28, 20, 0, true);
+            }
+            break;
+            
+        case 'R':
+            drawDetailedPalm(0, 40, 110, 140);
+            drawDetailedFinger(-17, -95, 103, 22, 0);
+            drawDetailedFinger(10, -93, 101, 21, 0);
+            ctx.save();
+            ctx.strokeStyle = '#8b6f47';
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-17, -35);
+            ctx.lineTo(10, -45);
+            ctx.stroke();
+            ctx.restore();
+            for(let i = 2; i < 4; i++){
+                drawDetailedFinger(15 + i * 20, 13, 28, 20, 0, true);
+            }
+            drawDetailedThumb(-62, 18, 52, 24, -0.2);
+            break;
+            
+        case 'S':
+            drawDetailedPalm(0, 30, 120, 140);
+            for(let i = 0; i < 4; i++){
+                drawDetailedFinger(-35 + i * 23, -17, 30, 22, 0, true);
+            }
+            ctx.save();
+            ctx.translate(-42, -17);
+            ctx.rotate(-0.55);
+            const sThumbGrad = ctx.createLinearGradient(-12, -14, 12, 14);
+            sThumbGrad.addColorStop(0, '#e8b896');
+            sThumbGrad.addColorStop(0.5, '#f0c8a8');
+            sThumbGrad.addColorStop(1, '#e8b896');
+            ctx.fillStyle = sThumbGrad;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 24, 30, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#8b6f47';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.fillStyle = '#f5d5d5';
+            ctx.beginPath();
+            ctx.ellipse(0, -8, 11, 9, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            break;
+            
+        case 'T':
+            drawDetailedPalm(0, 40, 120, 150);
+            drawDetailedFinger(-27, -12, 30, 24, 0, true);
+            for(let i = 1; i < 4; i++){
+                drawDetailedFinger(0 + i * 22, 3, 30, 22, 0, true);
+            }
+            ctx.save();
+            ctx.translate(-47, -12);
+            ctx.rotate(-0.55);
+            const tThumbGrad = ctx.createLinearGradient(-10, -15, 10, 15);
+            tThumbGrad.addColorStop(0, '#e8b896');
+            tThumbGrad.addColorStop(0.5, '#f0c8a8');
+            tThumbGrad.addColorStop(1, '#e8b896');
+            ctx.fillStyle = tThumbGrad;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 20, 32, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#8b6f47';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.restore();
+            break;
+            
+        case 'U':
+            drawDetailedPalm(0, 40, 110, 140);
+            drawDetailedFinger(-17, -95, 103, 22, 0);
+            drawDetailedFinger(10, -93, 101, 21, 0);
+            for(let i = 2; i < 4; i++){
+                drawDetailedFinger(15 + i * 20, 13, 28, 20, 0, true);
+            }
+            drawDetailedThumb(-62, 18, 52, 24, -0.2);
+            break;
+            
+        case 'V':
+            drawDetailedPalm(0, 40, 110, 140);
+            drawDetailedFinger(-20, -95, 103, 22, -0.35);
+            drawDetailedFinger(8, -95, 103, 22, 0.35);
+            for(let i = 2; i < 4; i++){
+                drawDetailedFinger(15 + i * 20, 13, 28, 20, 0, true);
+            }
+            drawDetailedThumb(-62, 18, 52, 24, -0.2);
+            break;
+            
+        case 'W':
+            drawDetailedPalm(0, 40, 110, 140);
+            drawDetailedFinger(-27, -95, 98, 21, -0.35);
+            drawDetailedFinger(-5, -97, 103, 22, 0);
+            drawDetailedFinger(18, -95, 101, 21, 0.35);
+            drawDetailedFinger(42, 13, 28, 20, 0.2, true);
+            drawDetailedThumb(-62, 18, 52, 24, -0.2);
+            break;
+            
+        case 'X':
+            drawDetailedPalm(0, 35, 120, 140);
+            ctx.save();
+            ctx.translate(0, -55);
+            const xGrad = ctx.createLinearGradient(-8, 0, 8, 50);
+            xGrad.addColorStop(0, '#e8b896');
+            xGrad.addColorStop(0.5, '#f0c8a8');
+            xGrad.addColorStop(1, '#e8b896');
+            ctx.fillStyle = xGrad;
+            ctx.beginPath();
+            ctx.moveTo(-9, 0);
+            ctx.lineTo(-9, 42);
+            ctx.bezierCurveTo(-9, 47, -6, 50, 0, 50);
+            ctx.bezierCurveTo(6, 50, 9, 47, 9, 42);
+            ctx.lineTo(9, 0);
+            ctx.bezierCurveTo(9, -5, 6, -9, 0, -9);
+            ctx.bezierCurveTo(-6, -9, -9, -5, -9, 0);
+            ctx.fill();
+            ctx.strokeStyle = '#8b6f47';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.restore();
+            for(let i = 0; i < 3; i++){
+                drawDetailedFinger(-27 + i * 22, -2, 30, 22, 0, true);
+            }
+            drawDetailedFinger(42, 8, 28, 20, 0.2, true);
+            drawDetailedThumb(-67, 13, 52, 24, -0.3);
+            break;
+            
+        case 'Y':
+            drawDetailedPalm(0, 35, 120, 140);
+            drawDetailedFinger(47, -85, 88, 19, 0);
+            for(let i = 0; i < 3; i++){
+                drawDetailedFinger(-30 + i * 22, -12, 30, 22, 0, true);
+            }
+            drawDetailedThumb(-72, -25, 73, 26, 1.57);
+            break;
+            
+        case 'Z':
+            drawDetailedPalm(0, 35, 120, 140);
+            drawDetailedFinger(0, -95, 108, 22, 0);
+            for(let i = 1; i < 4; i++){
+                drawDetailedFinger(-5 + i * 22, 8, 30, 22, 0, true);
+            }
+            drawDetailedThumb(-67, 13, 52, 24, -0.3);
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 7;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'miter';
+            ctx.beginPath();
+            ctx.moveTo(-22, -95);
+            ctx.lineTo(22, -95);
+            ctx.lineTo(-22, -55);
+            ctx.lineTo(22, -55);
+            ctx.stroke();
+            break;
+            
         default:
-            ctx.font = '80px Arial';
-            ctx.fillText('✋', 0, 20);
+            ctx.font = 'bold 90px Arial';
+            ctx.fillStyle = '#e8b896';
+            ctx.strokeStyle = '#8b6f47';
+            ctx.lineWidth = 4;
+            ctx.fillText('✋', 0, 30);
+            ctx.strokeText('✋', 0, 30);
     }
     ctx.restore();
 }
@@ -581,106 +805,119 @@ function drawASLNumber(num){
     ctx.save();
     ctx.translate(cx, cy);
     ctx.fillStyle = '#667eea';
-    ctx.font = 'bold 48px Arial';
+    ctx.font = 'bold 52px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(num.toString(), 0, -180);
+    ctx.fillText(num.toString(), 0, -185);
     
     switch(num){
         case 0:
-            drawPalm(0, 20, 100, 130);
+            drawDetailedPalm(0, 20, 100, 130);
             ctx.save();
             ctx.beginPath();
-            ctx.arc(0, -25, 50, 0, Math.PI * 2);
-            ctx.lineWidth = 22;
-            ctx.strokeStyle = drawSkinGradient(0, -25, 50, 50);
+            ctx.arc(0, -28, 53, 0, Math.PI * 2);
+            ctx.lineWidth = 24;
+            const zeroGrad = ctx.createLinearGradient(-53, -28, 53, -28);
+            zeroGrad.addColorStop(0, '#e8b896');
+            zeroGrad.addColorStop(0.3, '#f0c8a8');
+            zeroGrad.addColorStop(0.7, '#f0c8a8');
+            zeroGrad.addColorStop(1, '#e8b896');
+            ctx.strokeStyle = zeroGrad;
             ctx.stroke();
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = '#a67c52';
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#8b6f47';
             ctx.stroke();
             ctx.restore();
             break;
         case 1:
-            drawPalm(0, 35, 120, 140);
-            drawFinger(0, -90, 105, 20, 0);
+            drawDetailedPalm(0, 35, 120, 140);
+            drawDetailedFinger(0, -95, 108, 22, 0);
             for(let i = 1; i < 4; i++){
-                drawFinger(-5 + i * 22, 10, 28, 20, 0, true);
+                drawDetailedFinger(-5 + i * 22, 8, 30, 22, 0, true);
             }
-            drawThumb(-65, 15, 50, 22, -0.3);
+            drawDetailedThumb(-67, 13, 52, 24, -0.3);
             break;
         case 2:
-            drawPalm(0, 40, 110, 140);
-            drawFinger(-18, -90, 100, 20, -0.3);
-            drawFinger(8, -90, 100, 20, 0.3);
+            drawDetailedPalm(0, 40, 110, 140);
+            drawDetailedFinger(-20, -95, 103, 22, -0.35);
+            drawDetailedFinger(8, -95, 103, 22, 0.35);
             for(let i = 2; i < 4; i++){
-                drawFinger(15 + i * 20, 15, 26, 18, 0, true);
+                drawDetailedFinger(15 + i * 20, 13, 28, 20, 0, true);
             }
-            drawThumb(-60, 20, 50, 22, -0.2);
+            drawDetailedThumb(-62, 18, 52, 24, -0.2);
             break;
         case 3:
-            drawPalm(0, 40, 110, 140);
-            drawFinger(-25, -90, 95, 19, -0.3);
-            drawFinger(-5, -92, 100, 20, 0);
-            drawFinger(18, -90, 98, 19, 0.3);
-            drawFinger(40, 15, 26, 18, 0.2, true);
-            drawThumb(-60, 20, 50, 22, -0.2);
+            drawDetailedPalm(0, 40, 110, 140);
+            drawDetailedFinger(-27, -95, 98, 21, -0.35);
+            drawDetailedFinger(-5, -97, 103, 22, 0);
+            drawDetailedFinger(18, -95, 101, 21, 0.35);
+            drawDetailedFinger(42, 13, 28, 20, 0.2, true);
+            drawDetailedThumb(-62, 18, 52, 24, -0.2);
             break;
         case 4:
-            drawPalm(0, 40, 110, 150);
-            drawFinger(-38, -80, 95, 20, 0);
-            drawFinger(-13, -85, 100, 20, 0);
-            drawFinger(12, -85, 98, 19, 0);
-            drawFinger(35, -80, 90, 18, 0);
-            drawThumb(-65, 25, 50, 22, 0);
+            drawDetailedPalm(0, 40, 110, 150);
+            drawDetailedFinger(-38, -85, 98, 22, 0);
+            drawDetailedFinger(-13, -90, 103, 22, 0);
+            drawDetailedFinger(12, -90, 101, 21, 0);
+            drawDetailedFinger(35, -85, 93, 20, 0);
+            drawDetailedThumb(-67, 25, 52, 24, 0);
             break;
         case 5:
-            drawPalm(0, 40, 110, 150);
-            drawFinger(-38, -80, 95, 20, 0);
-            drawFinger(-13, -85, 100, 20, 0);
-            drawFinger(12, -85, 98, 19, 0);
-            drawFinger(35, -80, 90, 18, 0);
-            drawThumb(-70, -20, 70, 24, 1.57);
+            drawDetailedPalm(0, 40, 110, 150);
+            drawDetailedFinger(-38, -85, 98, 22, 0);
+            drawDetailedFinger(-13, -90, 103, 22, 0);
+            drawDetailedFinger(12, -90, 101, 21, 0);
+            drawDetailedFinger(35, -85, 93, 20, 0);
+            drawDetailedThumb(-72, -25, 73, 26, 1.57);
             break;
         case 6:
-            drawPalm(0, 40, 110, 150);
-            drawFinger(-38, -80, 95, 20, 0);
-            drawFinger(-13, -85, 100, 20, 0);
-            drawFinger(12, -85, 98, 19, 0);
-            drawFinger(35, 10, 28, 18, 0, true);
-            drawThumb(-70, -20, 70, 24, 1.57);
+            drawDetailedPalm(0, 40, 110, 150);
+            drawDetailedFinger(-38, -85, 98, 22, 0);
+            drawDetailedFinger(-13, -90, 103, 22, 0);
+            drawDetailedFinger(12, -90, 101, 21, 0);
+            drawDetailedFinger(35, 8, 30, 20, 0, true);
+            drawDetailedThumb(-72, -25, 73, 26, 1.57);
             break;
         case 7:
-            drawPalm(0, 40, 110, 150);
-            drawFinger(-38, -80, 95, 20, 0);
-            drawFinger(-13, -85, 100, 20, 0);
-            drawFinger(12, 10, 28, 18, 0, true);
-            drawFinger(35, 10, 28, 18, 0, true);
-            drawThumb(-70, -20, 70, 24, 1.57);
+            drawDetailedPalm(0, 40, 110, 150);
+            drawDetailedFinger(-38, -85, 98, 22, 0);
+            drawDetailedFinger(-13, -90, 103, 22, 0);
+            drawDetailedFinger(12, 8, 30, 20, 0, true);
+            drawDetailedFinger(35, 8, 30, 20, 0, true);
+            drawDetailedThumb(-72, -25, 73, 26, 1.57);
             break;
         case 8:
-            drawPalm(0, 40, 110, 150);
-            drawFinger(-38, -80, 95, 20, 0);
-            drawFinger(-13, 10, 28, 18, 0, true);
-            drawFinger(12, 10, 28, 18, 0, true);
-            drawFinger(35, 10, 28, 18, 0, true);
-            drawThumb(-70, -20, 70, 24, 1.57);
+            drawDetailedPalm(0, 40, 110, 150);
+            drawDetailedFinger(-38, -85, 98, 22, 0);
+            drawDetailedFinger(-13, 8, 30, 20, 0, true);
+            drawDetailedFinger(12, 8, 30, 20, 0, true);
+            drawDetailedFinger(35, 8, 30, 20, 0, true);
+            drawDetailedThumb(-72, -25, 73, 26, 1.57);
             break;
         case 9:
-            drawPalm(0, 40, 110, 150);
+            drawDetailedPalm(0, 40, 110, 150);
             ctx.save();
             ctx.beginPath();
-            ctx.arc(0, -20, 45, 0, Math.PI * 2);
-            ctx.lineWidth = 20;
-            ctx.strokeStyle = drawSkinGradient(0, -20, 45, 45);
+            ctx.arc(0, -23, 48, 0, Math.PI * 2);
+            ctx.lineWidth = 22;
+            const nineGrad = ctx.createLinearGradient(-48, -23, 48, -23);
+            nineGrad.addColorStop(0, '#e8b896');
+            nineGrad.addColorStop(0.5, '#f0c8a8');
+            nineGrad.addColorStop(1, '#e8b896');
+            ctx.strokeStyle = nineGrad;
             ctx.stroke();
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = '#a67c52';
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#8b6f47';
             ctx.stroke();
             ctx.restore();
-            drawThumb(-70, -20, 70, 24, 1.57);
+            drawDetailedThumb(-72, -25, 73, 26, 1.57);
             break;
         default:
-            ctx.font = '80px Arial';
-            ctx.fillText('✋', 0, 20);
+            ctx.font = 'bold 90px Arial';
+            ctx.fillStyle = '#e8b896';
+            ctx.strokeStyle = '#8b6f47';
+            ctx.lineWidth = 4;
+            ctx.fillText('✋', 0, 30);
+            ctx.strokeText('✋', 0, 30);
     }
     ctx.restore();
 }
