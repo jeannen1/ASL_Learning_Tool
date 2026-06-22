@@ -4,9 +4,19 @@ const alphabetGrid = document.getElementById('alphabetGrid');
 const wordInput = document.getElementById('wordInput');
 const errorMessage = document.getElementById('errorMessage');
 const currentWord = document.getElementById('currentWord');
+const animationControls = document.getElementById('animationControls');
+const animationSlider = document.getElementById('animationSlider');
+const replayBtn = document.getElementById('replayBtn');
 
 const profanityList = ['damn','hell','shit','fuck','bitch','ass','bastard','crap','piss','dick','cock','pussy','slut','whore','cunt','fag','nigger','nigga'];
 
+let currentLetter = null;
+let currentNumber = null;
+let animationProgress = 0;
+let isAnimating = false;
+let animationFrame = null;
+
+// Create alphabet buttons
 for(let i = 65; i <= 90; i++){
     const letter = String.fromCharCode(i);
     const btn = document.createElement('button');
@@ -16,6 +26,7 @@ for(let i = 65; i <= 90; i++){
     alphabetGrid.appendChild(btn);
 }
 
+// Create number buttons
 for(let i = 0; i <= 9; i++){
     const btn = document.createElement('button');
     btn.className = 'letter-btn';
@@ -28,6 +39,25 @@ wordInput.addEventListener('keypress', function(e){
     if(e.key === 'Enter') searchWord();
 });
 
+// Animation slider control
+animationSlider.addEventListener('input', function(e){
+    if(isAnimating) {
+        cancelAnimationFrame(animationFrame);
+        isAnimating = false;
+    }
+    animationProgress = parseFloat(e.target.value) / 100;
+    if(currentLetter) {
+        drawAnimatedLetter(currentLetter, animationProgress);
+    } else if(currentNumber !== null) {
+        drawAnimatedNumber(currentNumber, animationProgress);
+    }
+});
+
+// Replay button
+replayBtn.addEventListener('click', function(){
+    startAnimation();
+});
+
 function clearCanvas(){
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -37,22 +67,65 @@ function showLetterSign(letter){
     clearCanvas();
     currentWord.textContent = `Letter: ${letter}`;
     errorMessage.textContent = '';
+    currentLetter = letter;
+    currentNumber = null;
+    
     document.querySelectorAll('.letter-btn').forEach(btn => {
         btn.classList.remove('active');
         if(btn.textContent === letter) btn.classList.add('active');
     });
-    drawASLLetter(letter);
+    
+    animationControls.style.display = 'block';
+    startAnimation();
 }
 
 function showNumberSign(number){
     clearCanvas();
     currentWord.textContent = `Number: ${number}`;
     errorMessage.textContent = '';
+    currentNumber = number;
+    currentLetter = null;
+    
     document.querySelectorAll('.letter-btn').forEach(btn => {
         btn.classList.remove('active');
         if(btn.textContent == number) btn.classList.add('active');
     });
-    drawASLNumber(number);
+    
+    animationControls.style.display = 'block';
+    startAnimation();
+}
+
+function startAnimation(){
+    if(isAnimating) {
+        cancelAnimationFrame(animationFrame);
+    }
+    
+    animationProgress = 0;
+    animationSlider.value = 0;
+    isAnimating = true;
+    
+    const duration = 3000; // 3 seconds
+    const startTime = Date.now();
+    
+    function animate(){
+        const elapsed = Date.now() - startTime;
+        animationProgress = Math.min(elapsed / duration, 1);
+        animationSlider.value = animationProgress * 100;
+        
+        if(currentLetter) {
+            drawAnimatedLetter(currentLetter, animationProgress);
+        } else if(currentNumber !== null) {
+            drawAnimatedNumber(currentNumber, animationProgress);
+        }
+        
+        if(animationProgress < 1) {
+            animationFrame = requestAnimationFrame(animate);
+        } else {
+            isAnimating = false;
+        }
+    }
+    
+    animate();
 }
 
 function validateInput(input){
@@ -93,6 +166,7 @@ function searchWord(){
     errorMessage.textContent = '';
     currentWord.textContent = `Word: ${input.toUpperCase()}`;
     document.querySelectorAll('.letter-btn').forEach(btn => btn.classList.remove('active'));
+    animationControls.style.display = 'none';
     drawWordSign(input);
 }
 
@@ -108,14 +182,15 @@ function drawWordSign(word){
     const y = canvas.height/2;
     const maxWidth = canvas.width - 160;
     const spacing = Math.min(100, maxWidth / letters.length);
+    
     letters.forEach((char, index) => {
         ctx.save();
         ctx.translate(startX + index * spacing, y);
         ctx.scale(0.28, 0.28);
         if(/[a-zA-Z]/.test(char)){
-            drawASLLetter(char.toUpperCase());
+            drawAnimatedLetter(char.toUpperCase(), 1);
         } else if(/[0-9]/.test(char)){
-            drawASLNumber(parseInt(char));
+            drawAnimatedNumber(parseInt(char), 1);
         }
         ctx.restore();
         ctx.fillStyle = '#333';
@@ -124,30 +199,41 @@ function drawWordSign(word){
     });
 }
 
-// HIGHLY DETAILED HAND DRAWING FUNCTIONS
-function drawDetailedFinger(x, y, len, width, angle, curled = false) {
+// Easing function for smooth animation
+function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+// Interpolate between two values
+function lerp(start, end, progress) {
+    return start + (end - start) * easeInOutCubic(progress);
+}
+
+// Draw detailed finger with animation
+function drawAnimatedFinger(x, y, startLen, endLen, width, startAngle, endAngle, curled = false, progress = 1) {
+    const len = lerp(startLen, endLen, progress);
+    const angle = lerp(startAngle, endAngle, progress);
+    
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
     
     if(curled) {
-        // Curled finger - cartoon style with outline
+        const curlProgress = lerp(0, 1, progress);
         ctx.fillStyle = '#e8b896';
         ctx.strokeStyle = '#8b6f47';
         ctx.lineWidth = 4;
         
         ctx.beginPath();
-        ctx.arc(0, len * 0.35, width * 0.65, 0, Math.PI * 2);
+        ctx.arc(0, len * 0.35, width * 0.65 * curlProgress, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
         
-        // Inner shadow for depth
         ctx.fillStyle = 'rgba(139, 111, 71, 0.2)';
         ctx.beginPath();
-        ctx.arc(width * 0.15, len * 0.3, width * 0.4, 0, Math.PI * 2);
+        ctx.arc(width * 0.15, len * 0.3, width * 0.4 * curlProgress, 0, Math.PI * 2);
         ctx.fill();
         
-        // Fingernail
         ctx.fillStyle = '#f5d5d5';
         ctx.strokeStyle = '#c9a0a0';
         ctx.lineWidth = 2;
@@ -155,9 +241,7 @@ function drawDetailedFinger(x, y, len, width, angle, curled = false) {
         ctx.ellipse(width * 0.25, len * 0.25, width * 0.28, width * 0.2, 0.4, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-        
     } else {
-        // Extended finger with segments
         const segments = 3;
         const segLen = len / segments;
         
@@ -165,14 +249,12 @@ function drawDetailedFinger(x, y, len, width, angle, curled = false) {
             const w = width * (1 - i * 0.1);
             const yPos = i * segLen;
             
-            // Fill color with gradient effect
             const gradient = ctx.createLinearGradient(-w/2, yPos, w/2, yPos + segLen);
             gradient.addColorStop(0, '#e8b896');
             gradient.addColorStop(0.5, '#f0c8a8');
             gradient.addColorStop(1, '#e8b896');
             ctx.fillStyle = gradient;
             
-            // Finger segment shape
             ctx.beginPath();
             ctx.moveTo(-w/2, yPos);
             ctx.bezierCurveTo(-w/2, yPos + segLen * 0.3, -w/2, yPos + segLen * 0.7, -w * 0.48/2, yPos + segLen);
@@ -181,12 +263,10 @@ function drawDetailedFinger(x, y, len, width, angle, curled = false) {
             ctx.closePath();
             ctx.fill();
             
-            // Bold outline
             ctx.strokeStyle = '#8b6f47';
             ctx.lineWidth = 4;
             ctx.stroke();
             
-            // Knuckle crease
             if(i > 0) {
                 ctx.strokeStyle = '#6b4f37';
                 ctx.lineWidth = 2.5;
@@ -194,21 +274,18 @@ function drawDetailedFinger(x, y, len, width, angle, curled = false) {
                 ctx.arc(0, yPos, w * 0.42, 0.2, Math.PI - 0.2);
                 ctx.stroke();
                 
-                // Knuckle shadow
                 ctx.fillStyle = 'rgba(107, 79, 55, 0.15)';
                 ctx.beginPath();
                 ctx.ellipse(0, yPos - 3, w * 0.35, 4, 0, 0, Math.PI * 2);
                 ctx.fill();
             }
             
-            // Side shading for 3D effect
             ctx.fillStyle = 'rgba(139, 111, 71, 0.25)';
             ctx.beginPath();
             ctx.ellipse(-w * 0.35, yPos + segLen/2, w * 0.12, segLen * 0.3, 0, 0, Math.PI * 2);
             ctx.fill();
         }
         
-        // Fingernail at tip
         ctx.fillStyle = '#f5d5d5';
         ctx.strokeStyle = '#c9a0a0';
         ctx.lineWidth = 2.5;
@@ -217,13 +294,11 @@ function drawDetailedFinger(x, y, len, width, angle, curled = false) {
         ctx.fill();
         ctx.stroke();
         
-        // Nail highlight
         ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.beginPath();
         ctx.ellipse(-width * 0.12, len - width * 0.38, width * 0.18, width * 0.12, -0.3, 0, Math.PI * 2);
         ctx.fill();
         
-        // Nail moon (lunula)
         ctx.fillStyle = 'rgba(255, 240, 240, 0.8)';
         ctx.beginPath();
         ctx.ellipse(0, len - width * 0.15, width * 0.22, width * 0.12, 0, Math.PI, Math.PI * 2);
@@ -233,7 +308,10 @@ function drawDetailedFinger(x, y, len, width, angle, curled = false) {
     ctx.restore();
 }
 
-function drawDetailedThumb(x, y, len, width, angle) {
+function drawAnimatedThumb(x, y, startLen, endLen, width, startAngle, endAngle, progress = 1) {
+    const len = lerp(startLen, endLen, progress);
+    const angle = lerp(startAngle, endAngle, progress);
+    
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
@@ -241,7 +319,6 @@ function drawDetailedThumb(x, y, len, width, angle) {
     const seg1Len = len * 0.56;
     const seg2Len = len * 0.44;
     
-    // Lower thumb segment
     const grad1 = ctx.createLinearGradient(-width/2, 0, width/2, seg1Len);
     grad1.addColorStop(0, '#e8b896');
     grad1.addColorStop(0.5, '#f0c8a8');
@@ -260,7 +337,6 @@ function drawDetailedThumb(x, y, len, width, angle) {
     ctx.lineWidth = 4;
     ctx.stroke();
     
-    // Thumb knuckle
     ctx.strokeStyle = '#6b4f37';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -272,7 +348,6 @@ function drawDetailedThumb(x, y, len, width, angle) {
     ctx.ellipse(0, seg1Len - 3, width * 0.32, 5, 0, 0, Math.PI * 2);
     ctx.fill();
     
-    // Upper thumb segment
     const w2 = width * 0.9;
     const grad2 = ctx.createLinearGradient(-w2/2, seg1Len, w2/2, len);
     grad2.addColorStop(0, '#e8b896');
@@ -292,13 +367,11 @@ function drawDetailedThumb(x, y, len, width, angle) {
     ctx.lineWidth = 4;
     ctx.stroke();
     
-    // Side shading
     ctx.fillStyle = 'rgba(139, 111, 71, 0.25)';
     ctx.beginPath();
     ctx.ellipse(-w2 * 0.35, seg1Len + seg2Len/2, w2 * 0.12, seg2Len * 0.3, 0, 0, Math.PI * 2);
     ctx.fill();
     
-    // Thumbnail
     ctx.fillStyle = '#f5d5d5';
     ctx.strokeStyle = '#c9a0a0';
     ctx.lineWidth = 2.5;
@@ -307,7 +380,6 @@ function drawDetailedThumb(x, y, len, width, angle) {
     ctx.fill();
     ctx.stroke();
     
-    // Nail highlight
     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.beginPath();
     ctx.ellipse(-width * 0.14, len - width * 0.36, width * 0.2, width * 0.14, -0.3, 0, Math.PI * 2);
@@ -320,7 +392,6 @@ function drawDetailedPalm(x, y, w, h) {
     ctx.save();
     ctx.translate(x, y);
     
-    // Palm gradient
     const palmGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(w, h)/2);
     palmGrad.addColorStop(0, '#f0c8a8');
     palmGrad.addColorStop(0.4, '#e8b896');
@@ -328,45 +399,37 @@ function drawDetailedPalm(x, y, w, h) {
     palmGrad.addColorStop(1, '#c9956c');
     ctx.fillStyle = palmGrad;
     
-    // Palm shape
     ctx.beginPath();
     ctx.ellipse(0, 0, w/2, h/2, 0, 0, Math.PI * 2);
     ctx.fill();
     
-    // Bold outline
     ctx.strokeStyle = '#8b6f47';
     ctx.lineWidth = 4;
     ctx.stroke();
     
-    // Palm crease lines (darker and more visible)
     ctx.strokeStyle = '#7a5f3f';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     
-    // Heart line
     ctx.beginPath();
     ctx.moveTo(-w/3, -h/5);
     ctx.quadraticCurveTo(-w/8, -h/7, w/5, -h/6);
     ctx.stroke();
     
-    // Head line
     ctx.beginPath();
     ctx.moveTo(-w/3, h/10);
     ctx.quadraticCurveTo(0, h/6, w/3, h/5);
     ctx.stroke();
     
-    // Life line
     ctx.beginPath();
     ctx.arc(-w/5, h/5, w/3.5, -Math.PI * 0.6, Math.PI * 0.3);
     ctx.stroke();
     
-    // Thumb muscle shadow
     ctx.fillStyle = 'rgba(139, 111, 71, 0.25)';
     ctx.beginPath();
     ctx.ellipse(-w/4, h/6, w/5, h/4, 0.3, 0, Math.PI * 2);
     ctx.fill();
     
-    // Palm shadow for depth
     ctx.fillStyle = 'rgba(139, 111, 71, 0.15)';
     ctx.beginPath();
     ctx.ellipse(w/6, h/4, w/6, h/5, -0.3, 0, Math.PI * 2);
@@ -375,10 +438,14 @@ function drawDetailedPalm(x, y, w, h) {
     ctx.restore();
 }
 
-function drawContactPoint(x, y, size = 18) {
-    ctx.save();
+function drawContactPoint(x, y, size = 18, progress = 1) {
+    if(progress < 0.8) return; // Only show contact point near end of animation
     
-    // Outer glow
+    const opacity = (progress - 0.8) / 0.2; // Fade in during last 20%
+    
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    
     const outerGrad = ctx.createRadialGradient(x, y, 0, x, y, size * 1.8);
     outerGrad.addColorStop(0, 'rgba(255, 50, 50, 0.8)');
     outerGrad.addColorStop(0.5, 'rgba(255, 80, 80, 0.4)');
@@ -388,7 +455,6 @@ function drawContactPoint(x, y, size = 18) {
     ctx.arc(x, y, size * 1.8, 0, Math.PI * 2);
     ctx.fill();
     
-    // Main contact dot
     const mainGrad = ctx.createRadialGradient(x - 3, y - 3, 0, x, y, size);
     mainGrad.addColorStop(0, '#ff6060');
     mainGrad.addColorStop(0.7, '#ff3030');
@@ -398,13 +464,11 @@ function drawContactPoint(x, y, size = 18) {
     ctx.arc(x, y, size, 0, Math.PI * 2);
     ctx.fill();
     
-    // Bright highlight
     ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     ctx.beginPath();
     ctx.arc(x - 5, y - 5, size * 0.35, 0, Math.PI * 2);
     ctx.fill();
     
-    // Bold outline
     ctx.strokeStyle = '#990000';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -414,66 +478,81 @@ function drawContactPoint(x, y, size = 18) {
     ctx.restore();
 }
 
-function drawASLLetter(letter){
+function drawAnimatedLetter(letter, progress){
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
+    
+    clearCanvas();
+    
     ctx.save();
     ctx.translate(cx, cy);
     
-    // Letter label
     ctx.fillStyle = '#667eea';
     ctx.font = 'bold 52px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(letter, 0, -185);
     
+    drawDetailedPalm(0, 30, 120, 140);
+    
+    // Open hand starting positions (all fingers extended)
+    const openFingerLen = 100;
+    const openAngle = 0;
+    
     switch(letter){
         case 'A':
-            drawDetailedPalm(0, 30, 120, 140);
+            // Fingers curl down, thumb stays on side
             for(let i = 0; i < 4; i++){
-                drawDetailedFinger(-35 + i * 23, -15, 32, 22, 0, true);
+                drawAnimatedFinger(-35 + i * 23, -15, openFingerLen, 32, 22, openAngle, 0, true, progress);
             }
-            drawDetailedThumb(-72, 10, 58, 26, -0.2);
+            drawAnimatedThumb(-72, 10, 70, 58, 26, -0.2, -0.2, progress);
             break;
             
         case 'B':
-            drawDetailedPalm(0, 40, 110, 150);
-            drawDetailedFinger(-38, -85, 98, 22, 0);
-            drawDetailedFinger(-13, -90, 103, 22, 0);
-            drawDetailedFinger(12, -90, 101, 21, 0);
-            drawDetailedFinger(35, -85, 93, 20, 0);
-            drawDetailedThumb(-67, 25, 52, 24, 0);
+            // All fingers stay up, thumb moves across
+            drawAnimatedFinger(-38, -85, openFingerLen, 98, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(-13, -90, openFingerLen, 103, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(12, -90, openFingerLen, 101, 21, openAngle, 0, false, progress);
+            drawAnimatedFinger(35, -85, openFingerLen, 93, 20, openAngle, 0, false, progress);
+            drawAnimatedThumb(-67, 25, 70, 52, 24, -0.5, 0, progress);
             break;
             
         case 'C':
-            drawDetailedPalm(0, 20, 100, 130);
-            drawDetailedFinger(-35, -65, 88, 20, 0.35);
-            drawDetailedFinger(-12, -75, 98, 21, 0.18);
-            drawDetailedFinger(12, -75, 98, 21, -0.18);
-            drawDetailedFinger(35, -65, 88, 20, -0.35);
-            drawDetailedThumb(-58, -35, 63, 26, 0.55);
+            // Fingers curve to form C
+            drawAnimatedFinger(-35, -65, openFingerLen, 88, 20, openAngle, 0.35, false, progress);
+            drawAnimatedFinger(-12, -75, openFingerLen, 98, 21, openAngle, 0.18, false, progress);
+            drawAnimatedFinger(12, -75, openFingerLen, 98, 21, openAngle, -0.18, false, progress);
+            drawAnimatedFinger(35, -65, openFingerLen, 88, 20, openAngle, -0.35, false, progress);
+            drawAnimatedThumb(-58, -35, 70, 63, 26, -0.2, 0.55, progress);
             break;
             
         case 'D':
-            drawDetailedPalm(0, 40, 110, 140);
-            drawDetailedFinger(0, -95, 108, 22, 0);
-            drawDetailedThumb(-52, -12, 58, 24, 0.85);
-            drawDetailedFinger(15, 8, 30, 22, 0, true);
-            drawDetailedFinger(35, 13, 28, 20, 0.2, true);
-            drawDetailedFinger(53, 18, 26, 18, 0.3, true);
-            drawContactPoint(-22, 3, 16);
-            ctx.fillStyle = '#667eea';
-            ctx.font = 'bold 16px Arial';
-            ctx.fillText('← Thumb touches middle finger', 70, 5);
+            // Index up, others curl, thumb moves to touch middle
+            drawAnimatedFinger(0, -95, openFingerLen, 108, 22, openAngle, 0, false, progress);
+            drawAnimatedThumb(-52, -12, 70, 58, 24, -0.2, 0.85, progress);
+            drawAnimatedFinger(15, 8, openFingerLen, 30, 22, openAngle, 0, true, progress);
+            drawAnimatedFinger(35, 13, openFingerLen, 28, 20, openAngle, 0.2, true, progress);
+            drawAnimatedFinger(53, 18, openFingerLen, 26, 18, openAngle, 0.3, true, progress);
+            drawContactPoint(-22, 3, 16, progress);
+            if(progress > 0.8) {
+                ctx.fillStyle = '#667eea';
+                ctx.font = 'bold 16px Arial';
+                ctx.globalAlpha = (progress - 0.8) / 0.2;
+                ctx.fillText('← Thumb touches middle finger', 70, 5);
+                ctx.globalAlpha = 1;
+            }
             break;
             
         case 'E':
-            drawDetailedPalm(0, 35, 120, 140);
+            // All fingers curl tight, thumb wraps over
             for(let i = 0; i < 4; i++){
-                drawDetailedFinger(-35 + i * 23, -22, 30, 22, 0, true);
+                drawAnimatedFinger(-35 + i * 23, -22, openFingerLen, 30, 22, openAngle, 0, true, progress);
             }
             ctx.save();
-            ctx.translate(-58, -8);
-            ctx.rotate(-0.35);
+            const thumbX = lerp(-58, -58, progress);
+            const thumbY = lerp(-30, -8, progress);
+            const thumbAngle = lerp(-0.1, -0.35, progress);
+            ctx.translate(thumbX, thumbY);
+            ctx.rotate(thumbAngle);
             const thumbGrad = ctx.createLinearGradient(-12, -16, 12, 16);
             thumbGrad.addColorStop(0, '#e8b896');
             thumbGrad.addColorStop(0.5, '#f0c8a8');
@@ -489,178 +568,202 @@ function drawASLLetter(letter){
             break;
             
         case 'F':
-            drawDetailedPalm(0, 40, 110, 140);
-            drawDetailedFinger(-12, -90, 103, 22, 0);
-            drawDetailedFinger(12, -90, 101, 21, 0);
-            drawDetailedFinger(35, -85, 93, 20, 0);
-            drawDetailedThumb(-52, -35, 63, 26, 0.65);
-            ctx.save();
-            ctx.fillStyle = '#e8b896';
-            ctx.strokeStyle = '#8b6f47';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.arc(-40, -55, 20, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
-            drawContactPoint(-40, -53, 15);
-            ctx.fillStyle = '#667eea';
-            ctx.font = 'bold 16px Arial';
-            ctx.fillText('← Index & thumb touch', 15, -53);
+            // Index and thumb form circle, others up
+            drawAnimatedFinger(-12, -90, openFingerLen, 103, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(12, -90, openFingerLen, 101, 21, openAngle, 0, false, progress);
+            drawAnimatedFinger(35, -85, openFingerLen, 93, 20, openAngle, 0, false, progress);
+            drawAnimatedThumb(-52, -35, 70, 63, 26, -0.2, 0.65, progress);
+            if(progress > 0.5) {
+                ctx.save();
+                ctx.fillStyle = '#e8b896';
+                ctx.strokeStyle = '#8b6f47';
+                ctx.lineWidth = 4;
+                ctx.globalAlpha = (progress - 0.5) / 0.5;
+                ctx.beginPath();
+                ctx.arc(-40, -55, 20, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+            drawContactPoint(-40, -53, 15, progress);
+            if(progress > 0.8) {
+                ctx.fillStyle = '#667eea';
+                ctx.font = 'bold 16px Arial';
+                ctx.globalAlpha = (progress - 0.8) / 0.2;
+                ctx.fillText('← Index & thumb touch', 15, -53);
+                ctx.globalAlpha = 1;
+            }
             break;
             
         case 'G':
-            drawDetailedPalm(0, 30, 110, 140);
-            drawDetailedFinger(-32, -25, 83, 20, 1.57);
-            drawDetailedThumb(-58, -28, 63, 26, 0);
+            // Index points sideways, thumb opposite
+            drawAnimatedFinger(-32, -25, openFingerLen, 83, 20, openAngle, 1.57, false, progress);
+            drawAnimatedThumb(-58, -28, 70, 63, 26, -0.2, 0, progress);
             for(let i = 1; i < 4; i++){
-                drawDetailedFinger(-10 + i * 20, 13, 28, 20, 0, true);
+                drawAnimatedFinger(-10 + i * 20, 13, openFingerLen, 28, 20, openAngle, 0, true, progress);
             }
             break;
             
         case 'H':
-            drawDetailedPalm(0, 40, 110, 140);
-            drawDetailedFinger(-17, -25, 83, 20, 1.57);
-            drawDetailedFinger(10, -25, 83, 20, 1.57);
-            drawDetailedThumb(-62, -12, 58, 24, 0);
-            drawDetailedFinger(42, 13, 26, 18, 0, true);
-            drawDetailedFinger(60, 18, 24, 17, 0.2, true);
+            // Index and middle point sideways
+            drawAnimatedFinger(-17, -25, openFingerLen, 83, 20, openAngle, 1.57, false, progress);
+            drawAnimatedFinger(10, -25, openFingerLen, 83, 20, openAngle, 1.57, false, progress);
+            drawAnimatedThumb(-62, -12, 70, 58, 24, -0.2, 0, progress);
+            drawAnimatedFinger(42, 13, openFingerLen, 26, 18, openAngle, 0, true, progress);
+            drawAnimatedFinger(60, 18, openFingerLen, 24, 17, openAngle, 0.2, true, progress);
             break;
             
         case 'I':
-            drawDetailedPalm(0, 35, 120, 140);
-            drawDetailedFinger(47, -85, 88, 19, 0);
+            // Pinky up, others curl
+            drawAnimatedFinger(47, -85, openFingerLen, 88, 19, openAngle, 0, false, progress);
             for(let i = 0; i < 3; i++){
-                drawDetailedFinger(-30 + i * 22, -12, 30, 22, 0, true);
+                drawAnimatedFinger(-30 + i * 22, -12, openFingerLen, 30, 22, openAngle, 0, true, progress);
             }
-            drawDetailedThumb(-67, 13, 52, 24, -0.3);
+            drawAnimatedThumb(-67, 13, 70, 52, 24, -0.5, -0.3, progress);
             break;
             
         case 'J':
-            drawDetailedPalm(0, 35, 120, 140);
-            drawDetailedFinger(47, -85, 88, 19, 0);
+            // Same as I but with motion indicator
+            drawAnimatedFinger(47, -85, openFingerLen, 88, 19, openAngle, 0, false, progress);
             for(let i = 0; i < 3; i++){
-                drawDetailedFinger(-30 + i * 22, -12, 30, 22, 0, true);
+                drawAnimatedFinger(-30 + i * 22, -12, openFingerLen, 30, 22, openAngle, 0, true, progress);
             }
-            drawDetailedThumb(-67, 13, 52, 24, -0.3);
-            ctx.strokeStyle = '#667eea';
-            ctx.lineWidth = 6;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.arc(62, -45, 28, 0, Math.PI * 0.85);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(90, -45);
-            ctx.lineTo(95, -42);
-            ctx.stroke();
+            drawAnimatedThumb(-67, 13, 70, 52, 24, -0.5, -0.3, progress);
+            if(progress > 0.7) {
+                ctx.strokeStyle = '#667eea';
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.globalAlpha = (progress - 0.7) / 0.3;
+                ctx.beginPath();
+                ctx.arc(62, -45, 28, 0, Math.PI * 0.85);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(90, -45);
+                ctx.lineTo(95, -42);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
             break;
             
         case 'K':
-            drawDetailedPalm(0, 40, 110, 140);
-            drawDetailedFinger(-10, -95, 108, 22, 0);
-            drawDetailedFinger(15, -90, 103, 21, 0.22);
-            drawDetailedThumb(-47, -35, 63, 26, 0.55);
-            drawDetailedFinger(42, 13, 28, 20, 0, true);
-            drawDetailedFinger(60, 18, 26, 18, 0.2, true);
+            // Index and middle up at angle, thumb between
+            drawAnimatedFinger(-10, -95, openFingerLen, 108, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(15, -90, openFingerLen, 103, 21, openAngle, 0.22, false, progress);
+            drawAnimatedThumb(-47, -35, 70, 63, 26, -0.2, 0.55, progress);
+            drawAnimatedFinger(42, 13, openFingerLen, 28, 20, openAngle, 0, true, progress);
+            drawAnimatedFinger(60, 18, openFingerLen, 26, 18, openAngle, 0.2, true, progress);
             break;
             
         case 'L':
-            drawDetailedPalm(0, 35, 120, 140);
-            drawDetailedFinger(-27, -95, 103, 22, 0);
-            drawDetailedThumb(-27, -95, 93, 24, 1.57);
+            // Index and thumb form L
+            drawAnimatedFinger(-27, -95, openFingerLen, 103, 22, openAngle, 0, false, progress);
+            drawAnimatedThumb(-27, -95, 70, 93, 24, -0.2, 1.57, progress);
             for(let i = 1; i < 4; i++){
-                drawDetailedFinger(-5 + i * 22, 8, 30, 22, 0, true);
+                drawAnimatedFinger(-5 + i * 22, 8, openFingerLen, 30, 22, openAngle, 0, true, progress);
             }
             break;
             
         case 'M':
-            drawDetailedPalm(0, 40, 120, 150);
+            // Three fingers curl over thumb
             for(let i = 0; i < 3; i++){
-                drawDetailedFinger(-30 + i * 25, -12, 32, 24, 0, true);
+                drawAnimatedFinger(-30 + i * 25, -12, openFingerLen, 32, 24, openAngle, 0, true, progress);
             }
-            drawDetailedFinger(52, 3, 28, 22, 0.2, true);
-            drawDetailedThumb(-62, 13, 52, 24, -0.3);
+            drawAnimatedFinger(52, 3, openFingerLen, 28, 22, openAngle, 0.2, true, progress);
+            drawAnimatedThumb(-62, 13, 70, 52, 24, -0.5, -0.3, progress);
             break;
             
         case 'N':
-            drawDetailedPalm(0, 40, 120, 150);
+            // Two fingers curl over thumb
             for(let i = 0; i < 2; i++){
-                drawDetailedFinger(-25 + i * 25, -12, 32, 24, 0, true);
+                drawAnimatedFinger(-25 + i * 25, -12, openFingerLen, 32, 24, openAngle, 0, true, progress);
             }
-            drawDetailedFinger(32, 3, 28, 22, 0.2, true);
-            drawDetailedFinger(52, 8, 28, 21, 0.3, true);
-            drawDetailedThumb(-62, 13, 52, 24, -0.3);
+            drawAnimatedFinger(32, 3, openFingerLen, 28, 22, openAngle, 0.2, true, progress);
+            drawAnimatedFinger(52, 8, openFingerLen, 28, 21, openAngle, 0.3, true, progress);
+            drawAnimatedThumb(-62, 13, 70, 52, 24, -0.5, -0.3, progress);
             break;
             
         case 'O':
-            drawDetailedPalm(0, 20, 100, 130);
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(0, -28, 53, 0, Math.PI * 2);
-            ctx.lineWidth = 24;
-            const oGrad = ctx.createLinearGradient(-53, -28, 53, -28);
-            oGrad.addColorStop(0, '#e8b896');
-            oGrad.addColorStop(0.3, '#f0c8a8');
-            oGrad.addColorStop(0.7, '#f0c8a8');
-            oGrad.addColorStop(1, '#e8b896');
-            ctx.strokeStyle = oGrad;
-            ctx.stroke();
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = '#8b6f47';
-            ctx.stroke();
-            ctx.restore();
-            drawContactPoint(-38, -28, 14);
-            drawContactPoint(38, -28, 14);
-            ctx.fillStyle = '#667eea';
-            ctx.font = 'bold 15px Arial';
-            ctx.fillText('All fingertips touch thumb', 0, 35);
+            // All fingertips touch thumb in circle
+            if(progress > 0.5) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(0, -28, 53, 0, Math.PI * 2);
+                ctx.lineWidth = 24;
+                const oGrad = ctx.createLinearGradient(-53, -28, 53, -28);
+                oGrad.addColorStop(0, '#e8b896');
+                oGrad.addColorStop(0.3, '#f0c8a8');
+                oGrad.addColorStop(0.7, '#f0c8a8');
+                oGrad.addColorStop(1, '#e8b896');
+                ctx.strokeStyle = oGrad;
+                ctx.globalAlpha = (progress - 0.5) / 0.5;
+                ctx.stroke();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#8b6f47';
+                ctx.stroke();
+                ctx.restore();
+            }
+            drawContactPoint(-38, -28, 14, progress);
+            drawContactPoint(38, -28, 14, progress);
+            if(progress > 0.8) {
+                ctx.fillStyle = '#667eea';
+                ctx.font = 'bold 15px Arial';
+                ctx.globalAlpha = (progress - 0.8) / 0.2;
+                ctx.fillText('All fingertips touch thumb', 0, 35);
+                ctx.globalAlpha = 1;
+            }
             break;
             
         case 'P':
-            drawDetailedPalm(0, 40, 110, 140);
-            drawDetailedFinger(-12, -25, 83, 20, 1.35);
-            drawDetailedThumb(-47, -35, 63, 26, 0.55);
+            // Index points down at angle
+            drawAnimatedFinger(-12, -25, openFingerLen, 83, 20, openAngle, 1.35, false, progress);
+            drawAnimatedThumb(-47, -35, 70, 63, 26, -0.2, 0.55, progress);
             for(let i = 1; i < 4; i++){
-                drawDetailedFinger(10 + i * 20, 13, 28, 20, 0, true);
+                drawAnimatedFinger(10 + i * 20, 13, openFingerLen, 28, 20, openAngle, 0, true, progress);
             }
             break;
             
         case 'Q':
-            drawDetailedPalm(0, 30, 110, 140);
-            drawDetailedFinger(-32, 8, 83, 20, 1.85);
-            drawDetailedThumb(-58, 3, 63, 26, 1.85);
+            // Index and thumb point down
+            drawAnimatedFinger(-32, 8, openFingerLen, 83, 20, openAngle, 1.85, false, progress);
+            drawAnimatedThumb(-58, 3, 70, 63, 26, -0.2, 1.85, progress);
             for(let i = 1; i < 4; i++){
-                drawDetailedFinger(-10 + i * 20, 13, 28, 20, 0, true);
+                drawAnimatedFinger(-10 + i * 20, 13, openFingerLen, 28, 20, openAngle, 0, true, progress);
             }
             break;
             
         case 'R':
-            drawDetailedPalm(0, 40, 110, 140);
-            drawDetailedFinger(-17, -95, 103, 22, 0);
-            drawDetailedFinger(10, -93, 101, 21, 0);
-            ctx.save();
-            ctx.strokeStyle = '#8b6f47';
-            ctx.lineWidth = 5;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(-17, -35);
-            ctx.lineTo(10, -45);
-            ctx.stroke();
-            ctx.restore();
-            for(let i = 2; i < 4; i++){
-                drawDetailedFinger(15 + i * 20, 13, 28, 20, 0, true);
+            // Index and middle crossed
+            drawAnimatedFinger(-17, -95, openFingerLen, 103, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(10, -93, openFingerLen, 101, 21, openAngle, 0, false, progress);
+            if(progress > 0.6) {
+                ctx.save();
+                ctx.strokeStyle = '#8b6f47';
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.globalAlpha = (progress - 0.6) / 0.4;
+                ctx.beginPath();
+                ctx.moveTo(-17, -35);
+                ctx.lineTo(10, -45);
+                ctx.stroke();
+                ctx.restore();
             }
-            drawDetailedThumb(-62, 18, 52, 24, -0.2);
+            for(let i = 2; i < 4; i++){
+                drawAnimatedFinger(15 + i * 20, 13, openFingerLen, 28, 20, openAngle, 0, true, progress);
+            }
+            drawAnimatedThumb(-62, 18, 70, 52, 24, -0.5, -0.2, progress);
             break;
             
         case 'S':
-            drawDetailedPalm(0, 30, 120, 140);
+            // Fist with thumb over fingers
             for(let i = 0; i < 4; i++){
-                drawDetailedFinger(-35 + i * 23, -17, 30, 22, 0, true);
+                drawAnimatedFinger(-35 + i * 23, -17, openFingerLen, 30, 22, openAngle, 0, true, progress);
             }
             ctx.save();
-            ctx.translate(-42, -17);
-            ctx.rotate(-0.55);
+            const sThumbX = lerp(-42, -42, progress);
+            const sThumbY = lerp(-40, -17, progress);
+            const sThumbRot = lerp(-0.2, -0.55, progress);
+            ctx.translate(sThumbX, sThumbY);
+            ctx.rotate(sThumbRot);
             const sThumbGrad = ctx.createLinearGradient(-12, -14, 12, 14);
             sThumbGrad.addColorStop(0, '#e8b896');
             sThumbGrad.addColorStop(0.5, '#f0c8a8');
@@ -680,14 +783,17 @@ function drawASLLetter(letter){
             break;
             
         case 'T':
-            drawDetailedPalm(0, 40, 120, 150);
-            drawDetailedFinger(-27, -12, 30, 24, 0, true);
+            // Thumb between index and middle
+            drawAnimatedFinger(-27, -12, openFingerLen, 30, 24, openAngle, 0, true, progress);
             for(let i = 1; i < 4; i++){
-                drawDetailedFinger(0 + i * 22, 3, 30, 22, 0, true);
+                drawAnimatedFinger(0 + i * 22, 3, openFingerLen, 30, 22, openAngle, 0, true, progress);
             }
             ctx.save();
-            ctx.translate(-47, -12);
-            ctx.rotate(-0.55);
+            const tThumbX = lerp(-47, -47, progress);
+            const tThumbY = lerp(-35, -12, progress);
+            const tThumbRot = lerp(-0.2, -0.55, progress);
+            ctx.translate(tThumbX, tThumbY);
+            ctx.rotate(tThumbRot);
             const tThumbGrad = ctx.createLinearGradient(-10, -15, 10, 15);
             tThumbGrad.addColorStop(0, '#e8b896');
             tThumbGrad.addColorStop(0.5, '#f0c8a8');
@@ -703,38 +809,39 @@ function drawASLLetter(letter){
             break;
             
         case 'U':
-            drawDetailedPalm(0, 40, 110, 140);
-            drawDetailedFinger(-17, -95, 103, 22, 0);
-            drawDetailedFinger(10, -93, 101, 21, 0);
+            // Index and middle together pointing up
+            drawAnimatedFinger(-17, -95, openFingerLen, 103, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(10, -93, openFingerLen, 101, 21, openAngle, 0, false, progress);
             for(let i = 2; i < 4; i++){
-                drawDetailedFinger(15 + i * 20, 13, 28, 20, 0, true);
+                drawAnimatedFinger(15 + i * 20, 13, openFingerLen, 28, 20, openAngle, 0, true, progress);
             }
-            drawDetailedThumb(-62, 18, 52, 24, -0.2);
+            drawAnimatedThumb(-62, 18, 70, 52, 24, -0.5, -0.2, progress);
             break;
             
         case 'V':
-            drawDetailedPalm(0, 40, 110, 140);
-            drawDetailedFinger(-20, -95, 103, 22, -0.35);
-            drawDetailedFinger(8, -95, 103, 22, 0.35);
+            // Index and middle form V
+            drawAnimatedFinger(-20, -95, openFingerLen, 103, 22, openAngle, -0.35, false, progress);
+            drawAnimatedFinger(8, -95, openFingerLen, 103, 22, openAngle, 0.35, false, progress);
             for(let i = 2; i < 4; i++){
-                drawDetailedFinger(15 + i * 20, 13, 28, 20, 0, true);
+                drawAnimatedFinger(15 + i * 20, 13, openFingerLen, 28, 20, openAngle, 0, true, progress);
             }
-            drawDetailedThumb(-62, 18, 52, 24, -0.2);
+            drawAnimatedThumb(-62, 18, 70, 52, 24, -0.5, -0.2, progress);
             break;
             
         case 'W':
-            drawDetailedPalm(0, 40, 110, 140);
-            drawDetailedFinger(-27, -95, 98, 21, -0.35);
-            drawDetailedFinger(-5, -97, 103, 22, 0);
-            drawDetailedFinger(18, -95, 101, 21, 0.35);
-            drawDetailedFinger(42, 13, 28, 20, 0.2, true);
-            drawDetailedThumb(-62, 18, 52, 24, -0.2);
+            // Three fingers form W
+            drawAnimatedFinger(-27, -95, openFingerLen, 98, 21, openAngle, -0.35, false, progress);
+            drawAnimatedFinger(-5, -97, openFingerLen, 103, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(18, -95, openFingerLen, 101, 21, openAngle, 0.35, false, progress);
+            drawAnimatedFinger(42, 13, openFingerLen, 28, 20, openAngle, 0.2, true, progress);
+            drawAnimatedThumb(-62, 18, 70, 52, 24, -0.5, -0.2, progress);
             break;
             
         case 'X':
-            drawDetailedPalm(0, 35, 120, 140);
+            // Index bent/hooked
             ctx.save();
-            ctx.translate(0, -55);
+            const xY = lerp(-80, -55, progress);
+            ctx.translate(0, xY);
             const xGrad = ctx.createLinearGradient(-8, 0, 8, 50);
             xGrad.addColorStop(0, '#e8b896');
             xGrad.addColorStop(0.5, '#f0c8a8');
@@ -754,38 +861,42 @@ function drawASLLetter(letter){
             ctx.stroke();
             ctx.restore();
             for(let i = 0; i < 3; i++){
-                drawDetailedFinger(-27 + i * 22, -2, 30, 22, 0, true);
+                drawAnimatedFinger(-27 + i * 22, -2, openFingerLen, 30, 22, openAngle, 0, true, progress);
             }
-            drawDetailedFinger(42, 8, 28, 20, 0.2, true);
-            drawDetailedThumb(-67, 13, 52, 24, -0.3);
+            drawAnimatedFinger(42, 8, openFingerLen, 28, 20, openAngle, 0.2, true, progress);
+            drawAnimatedThumb(-67, 13, 70, 52, 24, -0.5, -0.3, progress);
             break;
             
         case 'Y':
-            drawDetailedPalm(0, 35, 120, 140);
-            drawDetailedFinger(47, -85, 88, 19, 0);
+            // Thumb and pinky extended
+            drawAnimatedFinger(47, -85, openFingerLen, 88, 19, openAngle, 0, false, progress);
             for(let i = 0; i < 3; i++){
-                drawDetailedFinger(-30 + i * 22, -12, 30, 22, 0, true);
+                drawAnimatedFinger(-30 + i * 22, -12, openFingerLen, 30, 22, openAngle, 0, true, progress);
             }
-            drawDetailedThumb(-72, -25, 73, 26, 1.57);
+            drawAnimatedThumb(-72, -25, 70, 73, 26, -0.2, 1.57, progress);
             break;
             
         case 'Z':
-            drawDetailedPalm(0, 35, 120, 140);
-            drawDetailedFinger(0, -95, 108, 22, 0);
+            // Index draws Z in air
+            drawAnimatedFinger(0, -95, openFingerLen, 108, 22, openAngle, 0, false, progress);
             for(let i = 1; i < 4; i++){
-                drawDetailedFinger(-5 + i * 22, 8, 30, 22, 0, true);
+                drawAnimatedFinger(-5 + i * 22, 8, openFingerLen, 30, 22, openAngle, 0, true, progress);
             }
-            drawDetailedThumb(-67, 13, 52, 24, -0.3);
-            ctx.strokeStyle = '#667eea';
-            ctx.lineWidth = 7;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'miter';
-            ctx.beginPath();
-            ctx.moveTo(-22, -95);
-            ctx.lineTo(22, -95);
-            ctx.lineTo(-22, -55);
-            ctx.lineTo(22, -55);
-            ctx.stroke();
+            drawAnimatedThumb(-67, 13, 70, 52, 24, -0.5, -0.3, progress);
+            if(progress > 0.7) {
+                ctx.strokeStyle = '#667eea';
+                ctx.lineWidth = 7;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'miter';
+                ctx.globalAlpha = (progress - 0.7) / 0.3;
+                ctx.beginPath();
+                ctx.moveTo(-22, -95);
+                ctx.lineTo(22, -95);
+                ctx.lineTo(-22, -55);
+                ctx.lineTo(22, -55);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
             break;
             
         default:
@@ -799,118 +910,143 @@ function drawASLLetter(letter){
     ctx.restore();
 }
 
-function drawASLNumber(num){
+function drawAnimatedNumber(num, progress){
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
+    
+    clearCanvas();
+    
     ctx.save();
     ctx.translate(cx, cy);
+    
     ctx.fillStyle = '#667eea';
     ctx.font = 'bold 52px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(num.toString(), 0, -185);
     
+    drawDetailedPalm(0, 30, 120, 140);
+    
+    const openFingerLen = 100;
+    const openAngle = 0;
+    
     switch(num){
         case 0:
-            drawDetailedPalm(0, 20, 100, 130);
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(0, -28, 53, 0, Math.PI * 2);
-            ctx.lineWidth = 24;
-            const zeroGrad = ctx.createLinearGradient(-53, -28, 53, -28);
-            zeroGrad.addColorStop(0, '#e8b896');
-            zeroGrad.addColorStop(0.3, '#f0c8a8');
-            zeroGrad.addColorStop(0.7, '#f0c8a8');
-            zeroGrad.addColorStop(1, '#e8b896');
-            ctx.strokeStyle = zeroGrad;
-            ctx.stroke();
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = '#8b6f47';
-            ctx.stroke();
-            ctx.restore();
+            // O shape
+            if(progress > 0.5) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(0, -28, 53, 0, Math.PI * 2);
+                ctx.lineWidth = 24;
+                const zeroGrad = ctx.createLinearGradient(-53, -28, 53, -28);
+                zeroGrad.addColorStop(0, '#e8b896');
+                zeroGrad.addColorStop(0.3, '#f0c8a8');
+                zeroGrad.addColorStop(0.7, '#f0c8a8');
+                zeroGrad.addColorStop(1, '#e8b896');
+                ctx.strokeStyle = zeroGrad;
+                ctx.globalAlpha = (progress - 0.5) / 0.5;
+                ctx.stroke();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#8b6f47';
+                ctx.stroke();
+                ctx.restore();
+            }
             break;
+            
         case 1:
-            drawDetailedPalm(0, 35, 120, 140);
-            drawDetailedFinger(0, -95, 108, 22, 0);
+            // Index up
+            drawAnimatedFinger(0, -95, openFingerLen, 108, 22, openAngle, 0, false, progress);
             for(let i = 1; i < 4; i++){
-                drawDetailedFinger(-5 + i * 22, 8, 30, 22, 0, true);
+                drawAnimatedFinger(-5 + i * 22, 8, openFingerLen, 30, 22, openAngle, 0, true, progress);
             }
-            drawDetailedThumb(-67, 13, 52, 24, -0.3);
+            drawAnimatedThumb(-67, 13, 70, 52, 24, -0.5, -0.3, progress);
             break;
+            
         case 2:
-            drawDetailedPalm(0, 40, 110, 140);
-            drawDetailedFinger(-20, -95, 103, 22, -0.35);
-            drawDetailedFinger(8, -95, 103, 22, 0.35);
+            // Index and middle up
+            drawAnimatedFinger(-20, -95, openFingerLen, 103, 22, openAngle, -0.35, false, progress);
+            drawAnimatedFinger(8, -95, openFingerLen, 103, 22, openAngle, 0.35, false, progress);
             for(let i = 2; i < 4; i++){
-                drawDetailedFinger(15 + i * 20, 13, 28, 20, 0, true);
+                drawAnimatedFinger(15 + i * 20, 13, openFingerLen, 28, 20, openAngle, 0, true, progress);
             }
-            drawDetailedThumb(-62, 18, 52, 24, -0.2);
+            drawAnimatedThumb(-62, 18, 70, 52, 24, -0.5, -0.2, progress);
             break;
+            
         case 3:
-            drawDetailedPalm(0, 40, 110, 140);
-            drawDetailedFinger(-27, -95, 98, 21, -0.35);
-            drawDetailedFinger(-5, -97, 103, 22, 0);
-            drawDetailedFinger(18, -95, 101, 21, 0.35);
-            drawDetailedFinger(42, 13, 28, 20, 0.2, true);
-            drawDetailedThumb(-62, 18, 52, 24, -0.2);
+            // Three fingers up
+            drawAnimatedFinger(-27, -95, openFingerLen, 98, 21, openAngle, -0.35, false, progress);
+            drawAnimatedFinger(-5, -97, openFingerLen, 103, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(18, -95, openFingerLen, 101, 21, openAngle, 0.35, false, progress);
+            drawAnimatedFinger(42, 13, openFingerLen, 28, 20, openAngle, 0.2, true, progress);
+            drawAnimatedThumb(-62, 18, 70, 52, 24, -0.5, -0.2, progress);
             break;
+            
         case 4:
-            drawDetailedPalm(0, 40, 110, 150);
-            drawDetailedFinger(-38, -85, 98, 22, 0);
-            drawDetailedFinger(-13, -90, 103, 22, 0);
-            drawDetailedFinger(12, -90, 101, 21, 0);
-            drawDetailedFinger(35, -85, 93, 20, 0);
-            drawDetailedThumb(-67, 25, 52, 24, 0);
+            // Four fingers up
+            drawAnimatedFinger(-38, -85, openFingerLen, 98, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(-13, -90, openFingerLen, 103, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(12, -90, openFingerLen, 101, 21, openAngle, 0, false, progress);
+            drawAnimatedFinger(35, -85, openFingerLen, 93, 20, openAngle, 0, false, progress);
+            drawAnimatedThumb(-67, 25, 70, 52, 24, -0.5, 0, progress);
             break;
+            
         case 5:
-            drawDetailedPalm(0, 40, 110, 150);
-            drawDetailedFinger(-38, -85, 98, 22, 0);
-            drawDetailedFinger(-13, -90, 103, 22, 0);
-            drawDetailedFinger(12, -90, 101, 21, 0);
-            drawDetailedFinger(35, -85, 93, 20, 0);
-            drawDetailedThumb(-72, -25, 73, 26, 1.57);
+            // All five fingers extended
+            drawAnimatedFinger(-38, -85, openFingerLen, 98, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(-13, -90, openFingerLen, 103, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(12, -90, openFingerLen, 101, 21, openAngle, 0, false, progress);
+            drawAnimatedFinger(35, -85, openFingerLen, 93, 20, openAngle, 0, false, progress);
+            drawAnimatedThumb(-72, -25, 70, 73, 26, -0.2, 1.57, progress);
             break;
+            
         case 6:
-            drawDetailedPalm(0, 40, 110, 150);
-            drawDetailedFinger(-38, -85, 98, 22, 0);
-            drawDetailedFinger(-13, -90, 103, 22, 0);
-            drawDetailedFinger(12, -90, 101, 21, 0);
-            drawDetailedFinger(35, 8, 30, 20, 0, true);
-            drawDetailedThumb(-72, -25, 73, 26, 1.57);
+            // Three fingers up, pinky touches thumb
+            drawAnimatedFinger(-38, -85, openFingerLen, 98, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(-13, -90, openFingerLen, 103, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(12, -90, openFingerLen, 101, 21, openAngle, 0, false, progress);
+            drawAnimatedFinger(35, 8, openFingerLen, 30, 20, openAngle, 0, true, progress);
+            drawAnimatedThumb(-72, -25, 70, 73, 26, -0.2, 1.57, progress);
             break;
+            
         case 7:
-            drawDetailedPalm(0, 40, 110, 150);
-            drawDetailedFinger(-38, -85, 98, 22, 0);
-            drawDetailedFinger(-13, -90, 103, 22, 0);
-            drawDetailedFinger(12, 8, 30, 20, 0, true);
-            drawDetailedFinger(35, 8, 30, 20, 0, true);
-            drawDetailedThumb(-72, -25, 73, 26, 1.57);
+            // Two fingers up, ring and pinky touch thumb
+            drawAnimatedFinger(-38, -85, openFingerLen, 98, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(-13, -90, openFingerLen, 103, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(12, 8, openFingerLen, 30, 20, openAngle, 0, true, progress);
+            drawAnimatedFinger(35, 8, openFingerLen, 30, 20, openAngle, 0, true, progress);
+            drawAnimatedThumb(-72, -25, 70, 73, 26, -0.2, 1.57, progress);
             break;
+            
         case 8:
-            drawDetailedPalm(0, 40, 110, 150);
-            drawDetailedFinger(-38, -85, 98, 22, 0);
-            drawDetailedFinger(-13, 8, 30, 20, 0, true);
-            drawDetailedFinger(12, 8, 30, 20, 0, true);
-            drawDetailedFinger(35, 8, 30, 20, 0, true);
-            drawDetailedThumb(-72, -25, 73, 26, 1.57);
+            // Index up, middle/ring/pinky touch thumb
+            drawAnimatedFinger(-38, -85, openFingerLen, 98, 22, openAngle, 0, false, progress);
+            drawAnimatedFinger(-13, 8, openFingerLen, 30, 20, openAngle, 0, true, progress);
+            drawAnimatedFinger(12, 8, openFingerLen, 30, 20, openAngle, 0, true, progress);
+            drawAnimatedFinger(35, 8, openFingerLen, 30, 20, openAngle, 0, true, progress);
+            drawAnimatedThumb(-72, -25, 70, 73, 26, -0.2, 1.57, progress);
             break;
+            
         case 9:
-            drawDetailedPalm(0, 40, 110, 150);
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(0, -23, 48, 0, Math.PI * 2);
-            ctx.lineWidth = 22;
-            const nineGrad = ctx.createLinearGradient(-48, -23, 48, -23);
-            nineGrad.addColorStop(0, '#e8b896');
-            nineGrad.addColorStop(0.5, '#f0c8a8');
-            nineGrad.addColorStop(1, '#e8b896');
-            ctx.strokeStyle = nineGrad;
-            ctx.stroke();
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = '#8b6f47';
-            ctx.stroke();
-            ctx.restore();
-            drawDetailedThumb(-72, -25, 73, 26, 1.57);
+            // All fingers touch thumb in circle
+            if(progress > 0.5) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(0, -23, 48, 0, Math.PI * 2);
+                ctx.lineWidth = 22;
+                const nineGrad = ctx.createLinearGradient(-48, -23, 48, -23);
+                nineGrad.addColorStop(0, '#e8b896');
+                nineGrad.addColorStop(0.5, '#f0c8a8');
+                nineGrad.addColorStop(1, '#e8b896');
+                ctx.strokeStyle = nineGrad;
+                ctx.globalAlpha = (progress - 0.5) / 0.5;
+                ctx.stroke();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#8b6f47';
+                ctx.stroke();
+                ctx.restore();
+            }
+            drawAnimatedThumb(-72, -25, 70, 73, 26, -0.2, 1.57, progress);
             break;
+            
         default:
             ctx.font = 'bold 90px Arial';
             ctx.fillStyle = '#e8b896';

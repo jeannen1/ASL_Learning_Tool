@@ -27,6 +27,19 @@
                 <div class="sign-display">
                     <div class="current-word" id="currentWord">Click a letter or search a word</div>
                     <canvas id="signCanvas" width="600" height="500"></canvas>
+                    
+                    <!-- Animation Controls -->
+                    <div class="animation-controls" id="animationControls" style="display: none;">
+                        <div class="control-row">
+                            <label for="animationSlider">Animation Progress:</label>
+                            <button class="replay-btn" id="replayBtn">🔄 Replay</button>
+                        </div>
+                        <input type="range" id="animationSlider" min="0" max="100" value="0" class="animation-slider">
+                        <div class="slider-labels">
+                            <span>Open Hand</span>
+                            <span>Final Position</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

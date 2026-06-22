@@ -18,3 +18,80 @@ h1 { font-size: 2.5em; }
 .sign-display { width: 100%; max-width: 800px; background: #f8f9fa; border-radius: 20px; padding: 40px; text-align: center; }
 .current-word { font-size: 2em; color: #667eea; margin-bottom: 30px; }
 canvas { border: 3px solid #667eea; border-radius: 15px; background: white; }
+.animation-controls {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f0f4f8;
+    border-radius: 12px;
+    border: 2px solid #667eea;
+}
+
+.control-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.control-row label {
+    font-weight: bold;
+    color: #667eea;
+    font-size: 1.1em;
+}
+
+.replay-btn {
+    padding: 10px 20px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.replay-btn:hover {
+    background: #764ba2;
+    transform: scale(1.05);
+}
+
+.animation-slider {
+    width: 100%;
+    height: 8px;
+    border-radius: 5px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, #667eea 0%, #764ba2 100%);
+}
+
+.animation-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #667eea;
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.animation-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #667eea;
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 0.9em;
+    color: #666;
+}
